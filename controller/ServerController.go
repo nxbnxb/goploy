@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 
 	"goploy/core"
 	"goploy/model"
@@ -93,7 +92,7 @@ func (server Server) GetOption(w http.ResponseWriter, _ *core.Goploy) *core.Resp
 	return &core.Response{Data: RespData{Server: serverList}}
 }
 
-// Add one server
+// Check one server
 func (server Server) Check(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		IP    string `json:"ip" validate:"ip4_addr"`
@@ -139,8 +138,6 @@ func (server Server) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response 
 		Owner:       reqData.Owner,
 		GroupID:     reqData.GroupID,
 		Description: reqData.Description,
-		CreateTime:  time.Now().Unix(),
-		UpdateTime:  time.Now().Unix(),
 	}.AddRow()
 
 	if err != nil {
@@ -173,7 +170,6 @@ func (server Server) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response
 		Owner:       reqData.Owner,
 		GroupID:     reqData.GroupID,
 		Description: reqData.Description,
-		UpdateTime:  time.Now().Unix(),
 	}.EditRow()
 
 	if err != nil {
@@ -194,8 +190,7 @@ func (server Server) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	err := model.Server{
-		ID:         reqData.ID,
-		UpdateTime: time.Now().Unix(),
+		ID: reqData.ID,
 	}.Remove()
 
 	if err != nil {
@@ -230,7 +225,6 @@ func (server Server) Install(w http.ResponseWriter, gp *core.Goploy) *core.Respo
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	serverInfo.LastInstallToken = uuid.New().String()
-	serverInfo.UpdateTime = time.Now().Unix()
 	serverInfo.Install()
 
 	go remoteInstall(gp.UserInfo, serverInfo, templateInfo)
@@ -246,8 +240,6 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 		OperatorID:   userInfo.ID,
 		OperatorName: userInfo.Name,
 		Type:         model.Rsync,
-		CreateTime:   time.Now().Unix(),
-		UpdateTime:   time.Now().Unix(),
 	}
 	if template.PackageIDStr != "" {
 		packages, err := model.Package{}.GetAllInIDStr(template.PackageIDStr)
@@ -290,9 +282,15 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 				installTraceModel.State = model.Success
 				installTraceModel.AddRow()
 
-				ws.GetUnicastHub().UnicastData <- &ws.UnicastData{
-					ToUserID: userInfo.ID,
-					Message:  installTraceModel,
+				ws.GetHub().Data <- &ws.Data{
+					Type:    ws.TypeServerTemplate,
+					UserIDs: []int64{userInfo.ID},
+					Message: ws.ServerTemplateMessage{
+						ServerID:   installTraceModel.ServerID,
+						ServerName: installTraceModel.ServerName,
+						Detail:     installTraceModel.Detail,
+						Ext:        installTraceModel.Ext,
+					},
 				}
 				break
 			}
@@ -306,9 +304,15 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 			installTraceModel.Detail = errbuf.String()
 			installTraceModel.State = model.Fail
 			installTraceModel.AddRow()
-			ws.GetUnicastHub().UnicastData <- &ws.UnicastData{
-				ToUserID: userInfo.ID,
-				Message:  installTraceModel,
+			ws.GetHub().Data <- &ws.Data{
+				Type:    ws.TypeServerTemplate,
+				UserIDs: []int64{userInfo.ID},
+				Message: ws.ServerTemplateMessage{
+					ServerID:   installTraceModel.ServerID,
+					ServerName: installTraceModel.ServerName,
+					Detail:     installTraceModel.Detail,
+					Ext:        installTraceModel.Ext,
+				},
 			}
 			return
 		}
@@ -330,9 +334,15 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 			installTraceModel.State = model.Success
 			installTraceModel.Detail = "connected"
 			installTraceModel.AddRow()
-			ws.GetUnicastHub().UnicastData <- &ws.UnicastData{
-				ToUserID: userInfo.ID,
-				Message:  installTraceModel,
+			ws.GetHub().Data <- &ws.Data{
+				Type:    ws.TypeServerTemplate,
+				UserIDs: []int64{userInfo.ID},
+				Message: ws.ServerTemplateMessage{
+					ServerID:   installTraceModel.ServerID,
+					ServerName: installTraceModel.ServerName,
+					Detail:     installTraceModel.Detail,
+					Ext:        installTraceModel.Ext,
+				},
 			}
 			var sshOutbuf, sshErrbuf bytes.Buffer
 			session.Stdout = &sshOutbuf
@@ -350,9 +360,15 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 				installTraceModel.State = model.Success
 				installTraceModel.Detail = sshOutbuf.String()
 				installTraceModel.AddRow()
-				ws.GetUnicastHub().UnicastData <- &ws.UnicastData{
-					ToUserID: userInfo.ID,
-					Message:  installTraceModel,
+				ws.GetHub().Data <- &ws.Data{
+					Type:    ws.TypeServerTemplate,
+					UserIDs: []int64{userInfo.ID},
+					Message: ws.ServerTemplateMessage{
+						ServerID:   installTraceModel.ServerID,
+						ServerName: installTraceModel.ServerName,
+						Detail:     installTraceModel.Detail,
+						Ext:        installTraceModel.Ext,
+					},
 				}
 				break
 			}
@@ -371,9 +387,15 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 		installTraceModel.State = model.Fail
 		installTraceModel.Detail = connectError.Error()
 		installTraceModel.AddRow()
-		ws.GetUnicastHub().UnicastData <- &ws.UnicastData{
-			ToUserID: userInfo.ID,
-			Message:  installTraceModel,
+		ws.GetHub().Data <- &ws.Data{
+			Type:    ws.TypeServerTemplate,
+			UserIDs: []int64{userInfo.ID},
+			Message: ws.ServerTemplateMessage{
+				ServerID:   installTraceModel.ServerID,
+				ServerName: installTraceModel.ServerName,
+				Detail:     installTraceModel.Detail,
+				Ext:        installTraceModel.Ext,
+			},
 		}
 		return
 	} else if scriptError != nil {
@@ -385,9 +407,15 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 		installTraceModel.State = model.Fail
 		installTraceModel.Detail = scriptError.Error()
 		installTraceModel.AddRow()
-		ws.GetUnicastHub().UnicastData <- &ws.UnicastData{
-			ToUserID: userInfo.ID,
-			Message:  installTraceModel,
+		ws.GetHub().Data <- &ws.Data{
+			Type:    ws.TypeServerTemplate,
+			UserIDs: []int64{userInfo.ID},
+			Message: ws.ServerTemplateMessage{
+				ServerID:   installTraceModel.ServerID,
+				ServerName: installTraceModel.ServerName,
+				Detail:     installTraceModel.Detail,
+				Ext:        installTraceModel.Ext,
+			},
 		}
 		return
 	}

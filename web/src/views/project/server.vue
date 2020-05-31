@@ -10,19 +10,22 @@
       :data="tableData"
       style="width: 100%"
     >
-      <el-table-column prop="name" label="服务器" />
-      <el-table-column prop="ip" label="IP" />
-      <el-table-column prop="port" label="端口" />
-      <el-table-column prop="owner" label="sshKey所有者" show-overflow-tooltip />
+      <el-table-column prop="name" label="服务器" min-width="140" />
+      <el-table-column prop="ip" label="IP" min-width="140">
+        <template slot-scope="scope">
+          {{ scope.row.ip }}:{{ scope.row.port }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="owner" label="sshKey所有者" width="100" show-overflow-tooltip />
       <el-table-column prop="group" label="分组" width="100">
         <template slot-scope="scope">
           {{ findGroupName(scope.row.groupId) }}
         </template>
       </el-table-column>
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column prop="createTime" label="创建时间" width="160" />
+      <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="insertTime" label="创建时间" width="160" />
       <el-table-column prop="updateTime" label="更新时间" width="160" />
-      <el-table-column prop="operation" label="操作" width="220">
+      <el-table-column prop="operation" label="操作" width="220" fixed="right">
         <template slot-scope="scope">
           <el-button size="small" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
           <el-button size="small" type="warning" @click="handleInstall(scope.row)">安装</el-button>
@@ -125,7 +128,6 @@
 import { getList, getInstallPreview, getInstallList, add, edit, check, remove, install } from '@/api/server'
 import { getOption as getGroupOption } from '@/api/group'
 import { getOption as getTemplateOption } from '@/api/template'
-import { parseTime } from '@/utils'
 // require component
 import { codemirror } from 'vue-codemirror'
 import 'codemirror/mode/shell/shell.js'
@@ -148,7 +150,7 @@ export default {
       tableData: [],
       pagination: {
         page: 1,
-        rows: 11,
+        rows: 16,
         total: 0
       },
       groupOption: [],
@@ -237,6 +239,28 @@ export default {
     }
   },
 
+  watch: {
+    '$store.getters.ws_message': function(response) {
+      if (response.type !== 2) {
+        return
+      }
+      const data = response.message
+      Object.assign(data, JSON.parse(data.ext))
+      let intallTrace = ''
+      if (data.type === 1) {
+        intallTrace += '[goploy~]$ ' + data.command + '\n'
+        intallTrace += data.detail + '\n'
+      } else if (data.type === 2) {
+        intallTrace += '[goploy~]$ ' + data.ssh + '\n'
+        intallTrace += data.detail + '\n'
+      } else if (data.type === 3) {
+        intallTrace += '[' + this.templateFormData.serverName + '~]$ ' + data.script + '\n'
+        intallTrace += data.detail + '\n'
+      }
+      this.installLog += intallTrace
+    }
+  },
+
   created() {
     this.storeFormData()
     this.getList()
@@ -248,10 +272,6 @@ export default {
     getList() {
       getList(this.pagination).then((response) => {
         const serverList = response.data.serverList || []
-        serverList.forEach((element) => {
-          element.createTime = parseTime(element.createTime)
-          element.updateTime = parseTime(element.updateTime)
-        })
         this.tableData = serverList
         this.pagination = response.data.pagination
       })
@@ -397,59 +417,14 @@ export default {
           this.installDialogVisible = true
           this.templateFormProps.disabled = this.templateDialogVisible = false
           this.installLog = ''
-          this.connectWebSocket().then(server => {
-            install(this.templateFormData.serverId, this.templateFormData.templateId).then((response) => {
-              this.$message({
-                message: response.message,
-                duration: 5 * 1000
-              })
+          install(this.templateFormData.serverId, this.templateFormData.templateId).then((response) => {
+            this.$message({
+              message: response.message,
+              duration: 5 * 1000
             })
           })
         } else {
           return false
-        }
-      })
-    },
-
-    connectWebSocket() {
-      if (this.webSocket && this.webSocket.readyState < 2) {
-        console.log('reusing the socket connection [state = ' + this.webSocket.readyState + ']: ' + this.webSocket.url)
-        return Promise.resolve(this.webSocket)
-      }
-
-      return new Promise((resolve, reject) => {
-        this.webSocket = new WebSocket('ws://' + window.location.host + process.env.VUE_APP_BASE_API + '/ws/unicast')
-
-        this.webSocket.onopen = () => {
-          console.log('socket connection is opened [state = ' + this.webSocket.readyState + ']: ' + this.webSocket.url)
-          resolve(this.webSocket)
-        }
-
-        this.webSocket.onerror = (err) => {
-          console.error('socket connection error : ', err)
-          reject(err)
-        }
-
-        this.webSocket.onclose = (e) => {
-          this.webSocket = null
-          console.log('connection closed (' + e.code + ')')
-        }
-
-        this.webSocket.onmessage = (e) => {
-          const data = JSON.parse(e.data)
-          Object.assign(data, JSON.parse(data.ext))
-          let intallTrace = ''
-          if (data.type === 1) {
-            intallTrace += '[goploy~]$ ' + data.command + '\n'
-            intallTrace += data.detail + '\n'
-          } else if (data.type === 2) {
-            intallTrace += '[goploy~]$ ' + data.ssh + '\n'
-            intallTrace += data.detail + '\n'
-          } else if (data.type === 3) {
-            intallTrace += '[' + this.templateFormData.serverName + '~]$ ' + data.script + '\n'
-            intallTrace += data.detail + '\n'
-          }
-          this.installLog += intallTrace
         }
       })
     },
@@ -477,7 +452,7 @@ export default {
 @import "@/styles/mixin.scss";
 .template-dialog {
   padding-right: 10px;
-  height:580px;
+  height: 400px;
   overflow-y: auto;
   @include scrollBar();
 }

@@ -16,7 +16,7 @@
     >
       <el-table-column prop="name" label="项目名称" width="200" />
       <el-table-column prop="url" label="项目地址" width="350" />
-      <el-table-column prop="path" label="部署路径" />
+      <el-table-column prop="path" label="部署路径" min-width="200" />
       <el-table-column prop="group" label="分组" width="100">
         <template slot-scope="scope">
           {{ findGroupName(scope.row.groupId) }}
@@ -30,7 +30,7 @@
           <span v-else>Webhook</span>
         </template>
       </el-table-column>
-      <el-table-column prop="operation" label="操作" width="350">
+      <el-table-column prop="operation" label="操作" width="350" fixed="right">
         <template slot-scope="scope">
           <el-button type="primary" @click="handleEdit(scope.row)">编辑</el-button>
           <el-button type="success" @click="handleServer(scope.row)">服务器管理</el-button>
@@ -65,15 +65,16 @@
             <el-form-item label="环境" prop="environment">
               <el-select v-model="formData.environment" placeholder="选择环境" style="width:100%">
                 <el-option label="生产环境" value="生产环境" />
+                <el-option label="预发布环境" value="预发布环境" />
                 <el-option label="测试环境" value="测试环境" />
                 <el-option label="开发环境" value="开发环境" />
               </el-select>
             </el-form-item>
             <el-form-item label="分支" prop="branch">
-              <el-input v-model="formData.branch" autocomplete="off" />
+              <el-input v-model="formData.branch" autocomplete="off" :disabled="formData.id>0" />
             </el-form-item>
             <el-form-item label="rsync选项" prop="rsyncOption">
-              <el-input v-model="formData.rsyncOption" type="textarea" :rows="4" autocomplete="off" placeholder="-rtv --exclude .git --delete-after" />
+              <el-input v-model="formData.rsyncOption" type="textarea" :rows="2" autocomplete="off" placeholder="-rtv --exclude .git --delete-after" />
             </el-form-item>
             <el-form-item label="绑定分组" prop="groupId">
               <el-select v-model="formData.groupId" placeholder="选择分组" style="width:100%">
@@ -111,6 +112,7 @@
             <el-row style="margin: 0 10px">
               <p>项目先同步到指定目录(rsync 软链目录)，然后ln -s 部署路径 软链目录</p>
               <p>可以避免项目在同步传输文件的过程中，外部访问到部分正在同步的文件</p>
+              <p>备份最近10次的部署文件，以便快速回滚</p>
             </el-row>
             <el-form-item label="" label-width="10px">
               <el-radio-group v-model="formProps.symlink">
@@ -122,9 +124,8 @@
               <el-input v-model="formData.symlinkPath" autocomplete="off" />
             </el-form-item>
             <el-row v-show="formProps.symlink" style="margin: 0 10px">
-              <p>如果部署路径已存在在目标服务器，请手动删除该目录<span style="color: red">rm -rf 部署路径</span></p>
-              <p>否则软链将会不成功</p>
-              <p>不得随意更换目录，如须手动更换，务必手动迁移原先的目录到目标服务器</p>
+              <p>如果部署路径已存在在目标服务器，请手动删除该目录<span style="color: red">rm -rf 部署路径</span>，否则软链将会不成功</p>
+              <p>如须更换目录，务必手动迁移原先的目录到目标服务器</p>
             </el-row>
           </el-tab-pane>
           <el-tab-pane label="拉取后运行脚本" name="afterPullScrpit">
@@ -180,11 +181,11 @@
         style="width: 100%"
       >
         <el-table-column prop="serverId" label="服务器ID" width="100" />
-        <el-table-column prop="serverName" label="服务器名称" />
-        <el-table-column prop="serverDescription" label="服务器描述" show-overflow-tooltip />
-        <el-table-column prop="createTime" width="160" label="绑定时间" />
+        <el-table-column prop="serverName" label="服务器名称" width="100" />
+        <el-table-column prop="serverDescription" label="服务器描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="insertTime" width="160" label="绑定时间" />
         <el-table-column prop="updateTime" width="160" label="更新时间" />
-        <el-table-column prop="operation" label="操作" width="75">
+        <el-table-column prop="operation" label="操作" width="80">
           <template slot-scope="scope">
             <el-button type="danger" @click="removeProjectServer(scope.row)">删除</el-button>
           </template>
@@ -207,9 +208,9 @@
       >
         <el-table-column prop="userId" label="用户ID" />
         <el-table-column prop="userName" label="用户名称" />
-        <el-table-column prop="createTime" width="160" label="绑定时间" />
+        <el-table-column prop="insertTime" width="160" label="绑定时间" />
         <el-table-column prop="updateTime" width="160" label="更新时间" />
-        <el-table-column prop="operation" label="操作" width="75">
+        <el-table-column prop="operation" label="操作" width="80">
           <template slot-scope="scope">
             <el-button type="danger" @click="removeProjectUser(scope.row)">删除</el-button>
           </template>
@@ -263,7 +264,6 @@ import { getCanBindProjectUser } from '@/api/user'
 import { getOption as getServerOption } from '@/api/server'
 import { getOption as getGroupOption } from '@/api/group'
 import { getList, getBindServerList, getBindUserList, add, edit, remove, addServer, addUser, removeProjectServer, removeProjectUser } from '@/api/project'
-import { parseTime } from '@/utils'
 // require component
 import { codemirror } from 'vue-codemirror'
 import 'codemirror/mode/shell/shell.js'
@@ -308,7 +308,7 @@ export default {
       tableData: [],
       pagination: {
         page: 1,
-        rows: 15,
+        rows: 17,
         total: 0
       },
       tableServerData: [],
@@ -629,10 +629,6 @@ export default {
     getProjectList() {
       getList(this.pagination, this.projectName).then((response) => {
         const projectList = response.data.projectList || []
-        projectList.forEach((element) => {
-          element.createTime = parseTime(element.createTime)
-          element.updateTime = parseTime(element.updateTime)
-        })
         this.tableData = projectList
         this.pagination = response.data.pagination
       }).catch(() => {
@@ -642,20 +638,12 @@ export default {
     getBindServerList(projectID) {
       getBindServerList(projectID).then((response) => {
         this.tableServerData = response.data.projectServerMap || []
-        this.tableServerData.forEach((element) => {
-          element.createTime = parseTime(element.createTime)
-          element.updateTime = parseTime(element.updateTime)
-        })
       })
     },
 
     getBindUserList(projectID) {
       getBindUserList(projectID).then((response) => {
         this.tableUserData = response.data.projectUserMap || []
-        this.tableUserData.forEach((element) => {
-          element.createTime = parseTime(element.createTime)
-          element.updateTime = parseTime(element.updateTime)
-        })
       })
     },
 

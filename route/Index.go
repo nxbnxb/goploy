@@ -19,8 +19,7 @@ func Init() *router.Router {
 		"/deploy/webhook":    {},
 	})
 	// websocket route
-	rt.Add("/ws/unicast", router.GET, ws.GetUnicastHub().Unicast)
-	rt.Add("/ws/broadcast", router.GET, ws.GetBroadcastHub().Broadcast)
+	rt.Add("/ws/connect", router.GET, ws.GetHub().Connect)
 
 	// user route
 	rt.Add("/user/login", router.POST, controller.User{}.Login)
@@ -53,7 +52,6 @@ func Init() *router.Router {
 	rt.Add("/deploy/getCommitList", router.GET, controller.Deploy{}.GetCommitList)
 	rt.Add("/deploy/getPreview", router.GET, controller.Deploy{}.GetPreview)
 	rt.Add("/deploy/publish", router.POST, controller.Deploy{}.Publish, middleware.HasPublishAuth)
-	rt.Add("/deploy/rollback", router.POST, controller.Deploy{}.Rollback, middleware.HasPublishAuth)
 	rt.Add("/deploy/webhook", router.POST, controller.Deploy{}.Webhook, middleware.FilterEvent)
 
 	// server route

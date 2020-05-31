@@ -8,11 +8,12 @@
       </div>
       <app-main />
     </div>
+    <right-menu />
   </div>
 </template>
 
 <script>
-import { Navbar, Sidebar, AppMain } from './components'
+import { Navbar, Sidebar, AppMain, RightMenu } from './components'
 import ResizeMixin from './mixin/ResizeHandler'
 
 export default {
@@ -20,7 +21,8 @@ export default {
   components: {
     Navbar,
     Sidebar,
-    AppMain
+    AppMain,
+    RightMenu
   },
   mixins: [ResizeMixin],
   computed: {
@@ -41,6 +43,9 @@ export default {
         mobile: this.device === 'mobile'
       }
     }
+  },
+  created() {
+    this.$store.dispatch('websocket/init')
   },
   methods: {
     handleClickOutside() {

@@ -13,77 +13,94 @@
       <el-input v-model="projectName" style="width:300px" placeholder="请输入项目名称" @change="getList" />
     </el-row>
     <el-table
+      :key="tableHeight"
       border
       stripe
       highlight-current-row
+      :max-height="tableHeight"
       :data="tableData"
       style="width: 100%;margin-top: 5px;"
     >
-      <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="name" label="项目名称">
+      <el-table-column prop="id" label="ID" width="80" align="center" />
+      <el-table-column prop="name" label="项目名称" min-width="160" align="center">
         <template slot-scope="scope">
           <b v-if="scope.row.environment === '生产环境'" style="color: #F56C6C">{{ scope.row.name }} - {{ scope.row.environment }}</b>
           <b v-else-if="scope.row.environment === '测试环境'" style="color: #E6A23C">{{ scope.row.name }} - {{ scope.row.environment }}</b>
           <b v-else style="color: #909399">{{ scope.row.name }} - {{ scope.row.environment }}</b>
         </template>
       </el-table-column>
-      <el-table-column prop="group" label="分组">
+      <el-table-column prop="group" label="分组" align="center">
         <template slot-scope="scope">
           {{ findGroupName(scope.row.groupId) }}
         </template>
       </el-table-column>
-      <el-table-column prop="branch" label="分支" />
-      <el-table-column prop="publisherName" label="构建者" width="160" />
-      <el-table-column prop="deployState" label="构建状态" width="70">
+      <el-table-column prop="branch" label="分支" align="center" />
+      <el-table-column prop="deployState" label="构建状态" width="230" align="center">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.deployState === 0" type="info" effect="plain">未构建</el-tag>
-          <el-tag v-else-if="scope.row.deployState === 1" type="warning" effect="plain">构建中</el-tag>
-          <el-tag v-else-if="scope.row.deployState === 2" type="success" effect="plain">成功</el-tag>
-          <el-tag v-else type="danger" effect="plain">失败</el-tag>
+          <el-tag :type="scope.row.tagType" effect="plain">{{ scope.row.tagText }}</el-tag>
+          <el-progress :percentage="scope.row.progressPercentage" :status="scope.row.progressStatus" />
         </template>
       </el-table-column>
-      <el-table-column prop="updateTime" label="上次构建时间" width="160" />
-      <el-table-column prop="operation" label="操作" width="220">
+      <el-table-column prop="updateTime" label="上次构建时间" width="160" align="center" />
+      <el-table-column prop="operation" label="操作" width="165" fixed="right">
         <template slot-scope="scope">
-          <el-button :disabled="scope.row.deployState === 1" type="primary" @click="publish(scope.row)">构建</el-button>
-          <el-button type="success" @click="handleDetail(scope.row)">详情</el-button>
-          <el-button :disabled="scope.row.deployState === 1" type="danger" @click="handleRollback(scope.row.id)">回滚</el-button>
+          <el-row class="operation-btn">
+            <el-dropdown
+              split-button
+              trigger="click"
+              :disabled="scope.row.deployState === 1"
+              type="primary"
+              @click="publish(scope.row)"
+              @command="handlePublishCommand"
+            >
+              构建
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item :command="scope.row">选择具体commit</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+            <el-button type="success" @click="handleDetail(scope.row)">详情</el-button>
+          </el-row>
         </template>
       </el-table-column>
     </el-table>
-    <el-dialog title="构建记录" :visible.sync="dialogVisible">
+    <el-dialog title="构建记录" :visible.sync="dialogVisible" class="publish-record">
       <el-row>
-        <el-col :span="9">
+        <el-col :span="8">
           <el-radio-group v-model="publishToken" @change="handleDetailChange">
             <el-row v-for="(item, index) in gitTraceList" :key="index">
               <el-row style="margin:5px 0">
-                <el-tag v-if="item.publishState === 1" type="success" effect="plain">成功</el-tag>
-                <el-tag v-else type="danger" effect="plain">失败</el-tag>
-                <el-radio style="margin-left: 10px;margin-right: 5px;width: 200px;" :label="item.token" border>{{ item.publisherName }} commitID: {{ item.commit }}</el-radio>
-                <el-button type="danger" icon="el-icon-refresh" plain @click="rollback(item)" />
+                <el-radio style="margin-left: 10px;margin-right: 5px;padding-right:8px;width: 210px;" :label="item.token" border>
+                  {{ item.publisherName }} commitID: {{ item.commit }}
+                  <span v-if="item.publishState === 1" style="color:#67C23A;float:right;line-height:16px;">成功</span>
+                  <span v-else style="color:#F56C6C;float:right;line-height:16px;">失败</span>
+                </el-radio>
+                <el-button type="danger" plain @click="rollback(item)">rebuild</el-button>
               </el-row>
             </el-row>
           </el-radio-group>
         </el-col>
-        <el-col :span="15" class="project-detail">
+        <el-col :span="16" class="project-detail">
           <el-row v-for="(item, index) in publishLocalTraceList" :key="index">
             <el-row v-if="item.type === 2">
               <el-row style="margin:5px 0">git同步信息</el-row>
-              <el-row style="margin:5px 0">时间: {{ item.createTime }}</el-row>
+              <el-row style="margin:5px 0">时间: {{ item.insertTime }}</el-row>
               <!-- 用数组的形式 兼容以前版本 -->
-              <el-row>commit: {{ item['commit'] }}</el-row>
-              <el-row>message: {{ item['message'] }}</el-row>
-              <el-row>author: {{ item['author'] }}</el-row>
-              <el-row>datetime: {{ item['timestamp'] ? parseTime(item['timestamp']) : '' }}</el-row>
-              <el-row style="margin:5px 0">
-                <el-tag v-if="item.state === 0" type="danger" effect="plain">失败</el-tag>
+              <el-row v-if="item.state !== 0">
+                <el-row>commit: {{ item['commit'] }}</el-row>
+                <el-row>message: {{ item['message'] }}</el-row>
+                <el-row>author: {{ item['author'] }}</el-row>
+                <el-row>datetime: {{ item['timestamp'] ? parseTime(item['timestamp']) : '' }}</el-row>
+                <el-row><span v-html="formatDetail(item['diff'])" /></el-row>
+              </el-row>
+              <el-row v-else style="margin:5px 0">
+                <el-tag type="danger" effect="plain">失败</el-tag>
                 <span v-html="formatDetail(item.detail)" />
               </el-row>
             </el-row>
             <el-row v-if="item.type === 3">
               <hr>
               <el-row style="margin:5px 0">获取代码后脚本信息</el-row>
-              <el-row style="margin:5px 0">时间: {{ item.createTime }}</el-row>
+              <el-row style="margin:5px 0">时间: {{ item.insertTime }}</el-row>
               <el-row>脚本: <pre v-html="formatDetail(item.script)" /></el-row>
               <el-row style="margin:5px 0">
                 <el-tag v-if="item.state === 0" type="danger" effect="plain">失败</el-tag>
@@ -95,7 +112,7 @@
               <el-row>
                 <el-row style="margin:5px 0">remote服务器信息</el-row>
                 <el-row style="margin:5px 0">服务器: {{ item.serverName }}</el-row>
-                <el-row style="margin:5px 0">时间: {{ item.createTime }}</el-row>
+                <el-row style="margin:5px 0">时间: {{ item.insertTime }}</el-row>
                 <el-row style="margin:5px 0">脚本: {{ item.script }}</el-row>
                 <el-row style="margin:5px 0">
                   <el-tag v-if="item.state === 0" type="danger" effect="plain">失败</el-tag>
@@ -111,7 +128,7 @@
               <el-row v-for="(trace, key) in item" :key="key">
                 <el-row v-if="trace.type === 4">
                   <el-row style="margin:5px 0">部署前脚本</el-row>
-                  <el-row style="margin:5px 0">时间: {{ trace.createTime }}</el-row>
+                  <el-row style="margin:5px 0">时间: {{ trace.insertTime }}</el-row>
                   <el-row>脚本: <pre v-html="formatDetail(trace.script)" /></el-row>
                   <el-row style="margin:5px 0">
                     <el-tag v-if="trace.state === 0" type="danger" effect="plain">失败</el-tag>
@@ -120,7 +137,7 @@
                 </el-row>
                 <el-row v-else-if="trace.type === 5">
                   <el-row style="margin:5px 0">rsync同步文件</el-row>
-                  <el-row style="margin:5px 0">时间: {{ trace.createTime }}</el-row>
+                  <el-row style="margin:5px 0">时间: {{ trace.insertTime }}</el-row>
                   <el-row>命令: {{ trace.command }}</el-row>
                   <el-row style="margin:5px 0">
                     <el-tag v-if="trace.state === 0" type="danger" effect="plain">失败</el-tag>
@@ -129,7 +146,7 @@
                 </el-row>
                 <el-row v-else>
                   <el-row style="margin:5px 0">部署后脚本</el-row>
-                  <el-row style="margin:5px 0">时间: {{ trace.createTime }}</el-row>
+                  <el-row style="margin:5px 0">时间: {{ trace.insertTime }}</el-row>
                   <el-row>脚本: {{ trace.script }}</el-row>
                   <el-row style="margin:5px 0">
                     <el-tag v-if="trace.state === 0" type="danger" effect="plain">失败</el-tag>
@@ -150,17 +167,23 @@
         border
         stripe
         highlight-current-row
+        max-height="447px"
         :data="commitTableData"
       >
+        <el-table-column type="expand">
+          <template slot-scope="props">
+            <span v-html="formatDetail(props.row.diff)" />
+          </template>
+        </el-table-column>
         <el-table-column prop="commit" label="commit" width="290" />
         <el-table-column prop="author" label="author" />
-        <el-table-column label="提交时间">
+        <el-table-column label="提交时间" width="135">
           <template slot-scope="scope">
             {{ parseTime(scope.row.timestamp) }}
           </template>
         </el-table-column>
-        <el-table-column prop="message" label="message" />
-        <el-table-column prop="operation" label="操作" width="75">
+        <el-table-column prop="message" label="message" width="200" show-overflow-tooltip />
+        <el-table-column prop="operation" label="操作" width="80" align="center" fixed="right">
           <template slot-scope="scope">
             <el-button type="danger" @click="rollback(scope.row)">构建</el-button>
           </template>
@@ -173,11 +196,13 @@
   </el-row>
 </template>
 <script>
-import { getList, getDetail, getPreview, getCommitList, publish, rollback } from '@/api/deploy'
+import tableHeight from '@/mixin/tableHeight'
+import { getList, getDetail, getPreview, getCommitList, publish } from '@/api/deploy'
 import { getDeployOption as getDeployGroupOption } from '@/api/group'
 import { parseTime } from '@/utils'
 
 export default {
+  mixins: [tableHeight],
   data() {
     return {
       groupId: parseInt(localStorage.getItem('groupId')) || 0,
@@ -196,10 +221,47 @@ export default {
       activeRomoteTracePane: ''
     }
   },
+  watch: {
+    '$store.getters.ws_message': function(response) {
+      if (response.type !== 1) {
+        return
+      }
+      const data = response.message
+      data.message = this.formatDetail(data.message)
+      if (data.state === 0) {
+        this.$notify.error({
+          title: data.projectName,
+          dangerouslyUseHTMLString: true,
+          message: data.message,
+          duration: 0
+        })
+      }
+      const projectIndex = this.tableData.findIndex(element => element.id === data.projectId)
+      if (projectIndex !== -1) {
+        const percent = 12.5 * data.state
+        this.tableData[projectIndex].progressPercentage = percent
+        this.tableData[projectIndex].progressStatus = 'warning'
+        this.tableData[projectIndex].tagType = 'warning'
+        this.tableData[projectIndex].tagText = data.message
+
+        if (percent === 0) {
+          this.tableData[projectIndex].progressStatus = 'exception'
+          this.tableData[projectIndex].tagType = 'danger'
+          this.tableData[projectIndex].tagText = '失败'
+        } else if (percent > 98) {
+          this.tableData[projectIndex].progressStatus = 'success'
+          this.tableData[projectIndex].tagType = 'success'
+        }
+
+        this.tableData[projectIndex].deployState = data.state
+        this.tableData[projectIndex].publisherName = data.username
+        this.tableData[projectIndex].updateTime = parseTime(new Date())
+      }
+    }
+  },
   created() {
     this.getList()
     this.getDeployGroupOption()
-    this.connectWebSocket()
     // // 路由跳转时结束websocket链接
     this.$router.afterEach(() => {
       this.webSocket && this.webSocket.close()
@@ -207,52 +269,6 @@ export default {
   },
   methods: {
     parseTime,
-    connectWebSocket() {
-      if (this.webSocket && this.webSocket.readyState < 2) {
-        console.log('reusing the socket connection [state = ' + this.webSocket.readyState + ']: ' + this.webSocket.url)
-        return Promise.resolve(this.webSocket)
-      }
-
-      return new Promise((resolve, reject) => {
-        this.webSocket = new WebSocket('ws://' + window.location.host + process.env.VUE_APP_BASE_API + '/ws/broadcast')
-
-        this.webSocket.onopen = () => {
-          console.log('socket connection is opened [state = ' + this.webSocket.readyState + ']: ' + this.webSocket.url)
-          resolve(this.webSocket)
-        }
-
-        this.webSocket.onerror = (err) => {
-          console.error('socket connection error : ', err)
-          reject(err)
-        }
-
-        this.webSocket.onclose = (e) => {
-          this.webSocket = null
-          console.log('connection closed (' + e.code + ')')
-        }
-
-        this.webSocket.onmessage = (e) => {
-          const data = JSON.parse(e.data)
-          console.log(data)
-          data.message = this.formatDetail(data.message)
-          if (data.state === 3) {
-            this.$notify.error({
-              title: data.projectName,
-              dangerouslyUseHTMLString: true,
-              message: data.message,
-              duration: 0
-            })
-          }
-          const projectIndex = this.tableData.findIndex(element => element.id === data.projectId)
-          if (projectIndex !== -1) {
-            this.tableData[projectIndex].deployState = data.state
-            this.tableData[projectIndex].publisherName = data.username
-            this.tableData[projectIndex].updateTime = parseTime(new Date())
-          }
-        }
-      })
-    },
-
     handleGroupChange(groupId) {
       localStorage.setItem('groupId', groupId)
       this.groupId = groupId
@@ -268,11 +284,23 @@ export default {
     getList() {
       getList(this.groupId, this.projectName).then((response) => {
         const projectList = response.data.projectList || []
-        projectList.forEach((element) => {
-          element.createTime = parseTime(element.createTime)
-          element.updateTime = parseTime(element.updateTime)
+        this.tableData = projectList.map(element => {
+          element.progressPercentage = 0
+          element.tagType = 'info'
+          element.tagText = '未构建'
+          if (element.deployState === 2) {
+            element.progressPercentage = 100
+            element.progressStatus = 'success'
+            element.tagType = 'success'
+            element.tagText = '成功'
+          } else if (element.deployState === 1) {
+            element.progressPercentage = 60
+            element.progressStatus = 'warning'
+            element.tagType = 'warning'
+            element.tagText = '构建中'
+          }
+          return element
         })
-        this.tableData = projectList
       })
     },
 
@@ -299,11 +327,9 @@ export default {
       }).then(() => {
         this.gitLog = []
         this.remoteLog = {}
-        this.connectWebSocket().then(server => {
-          publish(id).then((response) => {
-            const projectIndex = this.tableData.findIndex(element => element.id === id)
-            this.tableData[projectIndex].deployState = 1
-          })
+        publish(id, '').then((response) => {
+          const projectIndex = this.tableData.findIndex(element => element.id === id)
+          this.tableData[projectIndex].deployState = 1
         })
       }).catch(() => {
         this.$message({
@@ -317,7 +343,6 @@ export default {
       getDetail(this.publishToken).then((response) => {
         const publishTraceList = response.data.publishTraceList || []
         this.publishTraceList = publishTraceList.map(element => {
-          element.createTime = parseTime(element.createTime)
           if (element.ext !== '') Object.assign(element, JSON.parse(element.ext))
           return element
         })
@@ -356,7 +381,8 @@ export default {
       this.getDetail()
     },
 
-    handleRollback(id) {
+    handlePublishCommand(data) {
+      const id = data.id
       getCommitList(id).then(response => {
         this.commitTableData = response.data.commitList.map(element => {
           return Object.assign(element, { projectId: id })
@@ -372,7 +398,7 @@ export default {
         type: 'warning'
       }).then(() => {
         this.connectWebSocket().then(server => {
-          rollback(data.projectId, data.commit).then((response) => {
+          publish(data.projectId, data.commit).then((response) => {
             const projectIndex = this.tableData.findIndex(element => element.id === data.projectId)
             this.tableData[projectIndex].deployState = 1
             this.commitDialogVisible = false
@@ -400,8 +426,20 @@ export default {
 <style rel="stylesheet/scss" lang="scss" scoped>
 @import "@/styles/mixin.scss";
 .project-detail {
-  height:580px;
+  height:375px;
   overflow-y: auto;
   @include scrollBar();
+}
+.operation-btn {
+  >>>.el-button {
+    line-height: 1.15;
+  }
+}
+@media screen and (max-width: 1440px){
+  .publish-record {
+    >>>.el-dialog {
+      width: 75%;
+    }
+  }
 }
 </style>
