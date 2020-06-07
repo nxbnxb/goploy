@@ -22,6 +22,8 @@
 
 [DEMO](http://49.234.66.193:3000) admin:admin!@# 
 
+[帮助文档](https://zhenorzz.gitee.io/goploy)
+
 ## 内容列表
 
 - [背景](#背景)
@@ -56,7 +58,6 @@ nginx反向代理记得升级ws协议
 proxy_set_header Upgrade         $http_upgrade;
 proxy_set_header Connection      "upgrade";
 ```
-
 
 ## 后端开发说明
 1. 安装go，必须是1.13以上
