@@ -8,6 +8,7 @@
       <div style="margin: 0 30px">
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('time')">时间转换</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('unicode')">unicode</el-link></el-row>
+        <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('cron')">cron生成</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('qrcode')">二维码</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('byte')">字节转换</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('color')">颜色转换</el-link></el-row>
@@ -22,72 +23,79 @@
       append-to-body
       :close-on-click-modal="false"
     >
-      <el-row v-show="transformType === 'time'">
-        <el-row>
-          <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">时间戳</span>
-          <el-input v-model="timeExchange.timestamp" style="width: 200px" :placeholder="timeExchange.placeholder" clearable />
-          <el-button type="primary" @click="timestampToDate">转换>></el-button>
-          <el-input v-model="timeExchange.date" style="width: 200px" />
+      <el-row class="transform-content">
+        <el-row v-show="transformType === 'time'">
+          <el-row>
+            <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">时间戳</span>
+            <el-input v-model="timeExchange.timestamp" style="width: 200px" :placeholder="timeExchange.placeholder" clearable />
+            <el-button type="primary" @click="timestampToDate">转换>></el-button>
+            <el-input v-model="timeExchange.date" style="width: 200px" />
+          </el-row>
+          <el-row style="margin-top: 10px">
+            <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">时间</span>
+            <el-input v-model="dateExchange.date" style="width: 200px" :placeholder="dateExchange.placeholder" clearable />
+            <el-button type="primary" @click="dateToTimestamp">转换>></el-button>
+            <el-input v-model="dateExchange.timestamp" style="width: 200px" />
+          </el-row>
         </el-row>
-        <el-row style="margin-top: 10px">
-          <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">时间</span>
-          <el-input v-model="dateExchange.date" style="width: 200px" :placeholder="dateExchange.placeholder" clearable />
-          <el-button type="primary" @click="dateToTimestamp">转换>></el-button>
-          <el-input v-model="dateExchange.timestamp" style="width: 200px" />
+        <el-row v-show="transformType === 'cron'">
+          <el-input v-model="cron.expression" placeholder="* * * * ?" style="width: 450px; margin-bottom:10px" />
+          <el-button type="primary" @click="crontabTranslate">转换>></el-button>
+          <el-row>{{ cron.chinese }}</el-row>
         </el-row>
-      </el-row>
-      <el-row v-show="transformType === 'unicode'">
-        <el-input
-          v-model="unicode.escape"
-          type="textarea"
-          :autosize="{ minRows: 2}"
-          placeholder="请输入未转义的unicode编码"
-        />
-        <el-input
-          :value="unicodeUnescape"
-          style="margin-top:10px"
-          type="textarea"
-          :autosize="{ minRows: 2}"
-          readonly
-        />
-      </el-row>
-      <el-row v-show="transformType === 'color'">
-        <el-row>
-          <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">十六进制</span>
-          <el-input v-model="cHexExchange.hex" style="width: 200px" placeholder="#FFFFFF" clearable />
-          <el-button type="primary" @click="hexToRGB">转换>></el-button>
-          <el-input v-model="cHexExchange.rgb" style="width: 200px" />
+        <el-row v-show="transformType === 'unicode'">
+          <el-input
+            v-model="unicode.escape"
+            type="textarea"
+            :autosize="{ minRows: 2}"
+            placeholder="请输入未转义的unicode编码"
+          />
+          <el-input
+            :value="unicodeUnescape"
+            style="margin-top:10px"
+            type="textarea"
+            :autosize="{ minRows: 2}"
+            readonly
+          />
         </el-row>
-        <el-row style="margin-top: 10px">
-          <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">RGB</span>
-          <el-input v-model="RGBExchange.rgb" style="width: 200px" placeholder="(255,255,255)" clearable />
-          <el-button type="primary" @click="rgbToHex">转换>></el-button>
-          <el-input v-model="RGBExchange.hex" style="width: 200px" />
+        <el-row v-show="transformType === 'color'">
+          <el-row>
+            <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">十六进制</span>
+            <el-input v-model="cHexExchange.hex" style="width: 200px" placeholder="#FFFFFF" clearable />
+            <el-button type="primary" @click="hexToRGB">转换>></el-button>
+            <el-input v-model="cHexExchange.rgb" style="width: 200px" />
+          </el-row>
+          <el-row style="margin-top: 10px">
+            <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">RGB</span>
+            <el-input v-model="RGBExchange.rgb" style="width: 200px" placeholder="(255,255,255)" clearable />
+            <el-button type="primary" @click="rgbToHex">转换>></el-button>
+            <el-input v-model="RGBExchange.hex" style="width: 200px" />
+          </el-row>
         </el-row>
-      </el-row>
-      <el-row v-show="transformType === 'byte'">
-        <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">字节</span>
-        <el-input v-model="bytes" style="width: 130px" />
-        <el-select v-model="bytesUnit" style="width: 70px">
-          <el-option :value="1" label="B" />
-          <el-option :value="1*1024" label="KB" />
-          <el-option :value="1024*1024" label="MB" />
-        </el-select>
-        <el-button type="primary" @click="bytesToHumanSize">转换>></el-button>
-        <el-input v-model="humanSize" style="width: 200px" />
-      </el-row>
-      <el-row v-show="transformType === 'qrcode'">
-        <el-input
-          v-model="qrcode.text"
-          type="textarea"
-          :autosize="{ minRows: 2}"
-          placeholder="请输入内容"
-        />
-        <el-row style="margin-top: 10px">
-          <span style="display:inline-block;width:30px;font-size:14px;margin-right:10px">大小</span>
-          <el-input-number v-model="qrcode.width" />
+        <el-row v-show="transformType === 'byte'">
+          <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">字节</span>
+          <el-input v-model="bytes" style="width: 130px" />
+          <el-select v-model="bytesUnit" style="width: 70px">
+            <el-option :value="1" label="B" />
+            <el-option :value="1*1024" label="KB" />
+            <el-option :value="1024*1024" label="MB" />
+          </el-select>
+          <el-button type="primary" @click="bytesToHumanSize">转换>></el-button>
+          <el-input v-model="humanSize" style="width: 200px" />
         </el-row>
-        <vue-qrcode class="text-align:center" :value="qrcode.text" :width="qrcode.width" />
+        <el-row v-show="transformType === 'qrcode'">
+          <el-input
+            v-model="qrcode.text"
+            type="textarea"
+            :autosize="{ minRows: 2}"
+            placeholder="请输入内容"
+          />
+          <el-row style="margin-top: 10px">
+            <span style="display:inline-block;width:30px;font-size:14px;margin-right:10px">大小</span>
+            <el-input-number v-model="qrcode.width" />
+          </el-row>
+          <vue-qrcode class="text-align:center" :value="qrcode.text" :width="qrcode.width" />
+        </el-row>
       </el-row>
     </el-dialog>
   </div>
@@ -95,6 +103,7 @@
 
 <script>
 import VueQrcode from 'vue-qrcode'
+import cronstrue from 'cronstrue/i18n'
 import { parseTime, humanSize } from '@/utils'
 export default {
   components: {
@@ -130,6 +139,10 @@ export default {
       },
       unicode: {
         escape: ''
+      },
+      cron: {
+        expression: '',
+        chinese: ''
       },
       bytes: '',
       bytesUnit: 1,
@@ -189,12 +202,20 @@ export default {
     },
     bytesToHumanSize() {
       this.humanSize = humanSize(this.bytes * this.bytesUnit)
+    },
+    crontabTranslate() {
+      try {
+        this.cron.chinese = cronstrue.toString(this.cron.expression, { locale: 'zh_CN' })
+      } catch (error) {
+        this.$message.error(error)
+      }
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+@import "@/styles/mixin.scss";
 .fab {
   z-index: 20;
   position: fixed;
@@ -222,6 +243,15 @@ export default {
     height: 20px;
   }
 }
+
+.transform {
+  &-content {
+    max-height: 500px;
+    overflow-y: auto;
+    @include scrollBar();
+  }
+}
+
 </style>
 <style lang="scss">
 .fab-popper {
