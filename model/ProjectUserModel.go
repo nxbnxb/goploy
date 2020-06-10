@@ -144,7 +144,7 @@ func (pu ProjectUsers) AddMany() error {
 		Columns("project_id", "user_id")
 
 	for _, row := range pu {
-		builder = builder.Values(row.ProjectID, row.UserID, row.InsertTime, row.UpdateTime)
+		builder = builder.Values(row.ProjectID, row.UserID)
 	}
 	_, err := builder.RunWith(DB).Exec()
 	return err
