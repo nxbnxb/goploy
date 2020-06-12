@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/Masterminds/squirrel v1.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/elazarl/go-bindata-assetfs v1.0.0
 	github.com/go-playground/locales v0.12.1
 	github.com/go-playground/universal-translator v0.16.0
 	github.com/go-sql-driver/mysql v1.4.1
@@ -12,6 +13,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/joho/godotenv v1.3.0
+	github.com/jteeuwen/go-bindata v3.0.7+incompatible
 	github.com/leodido/go-urn v1.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1 // indirect

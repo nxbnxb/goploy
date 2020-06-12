@@ -184,3 +184,7 @@ func ConnectSSH(user, password, host string, port int) (*ssh.Session, error) {
 
 	return session, nil
 }
+
+func ClearNewline(str string) string {
+	return strings.TrimRight(strings.Replace(str, "\r\n", "\n", -1), "\n")
+}

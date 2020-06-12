@@ -7,12 +7,12 @@ import (
 	"goploy/core"
 	"goploy/model"
 	"goploy/route"
+	"goploy/utils"
 	"goploy/ws"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -48,18 +48,21 @@ func install() {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	mysqlUser = utils.ClearNewline(mysqlUser)
 	println("请输入mysql的密码:")
 	mysqlPassword, err := inputReader.ReadString('\n')
 	if err != nil {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	mysqlPassword = utils.ClearNewline(mysqlPassword)
 	println("请输入mysql的主机(默认127.0.0.1，不带端口):")
 	mysqlHost, err := inputReader.ReadString('\n')
 	if err != nil {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	mysqlHost = utils.ClearNewline(mysqlHost)
 	if len(mysqlHost) == 0 {
 		mysqlHost = "127.0.0.1"
 	}
@@ -69,6 +72,7 @@ func install() {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	mysqlPort = utils.ClearNewline(mysqlPort)
 	if len(mysqlPort) == 0 {
 		mysqlPort = "3306"
 	}
@@ -78,6 +82,7 @@ func install() {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	logPath = utils.ClearNewline(logPath)
 	if len(logPath) == 0 {
 		logPath = "/tmp/"
 	}
@@ -87,6 +92,7 @@ func install() {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	sshFile = utils.ClearNewline(sshFile)
 	if len(sshFile) == 0 {
 		sshFile = "/root/.ssh/id_rsa"
 	}
@@ -96,21 +102,17 @@ func install() {
 		println("There were errors reading, exiting program.")
 		return
 	}
+	port = utils.ClearNewline(port)
 	if len(port) == 0 {
 		port = "80"
 	}
 	println("开始安装数据库...")
-	mysqlUser = strings.TrimRight(mysqlUser, "\n")
-	mysqlPassword = strings.TrimRight(mysqlPassword, "\n")
-	mysqlHost = strings.TrimRight(mysqlHost, "\n")
-	mysqlPort = strings.TrimRight(mysqlPort, "\n")
-	cmd := exec.Command("mysql",
-		"-h"+mysqlHost,
-		"-P"+mysqlPort,
-		"-u"+mysqlUser,
-		"-p"+mysqlPassword,
-		"-e",
-		"source ./goploy.sql")
+	mysqlOption := []string{"-h"+mysqlHost, "-P"+mysqlPort, "-u"+mysqlUser}
+	if len(mysqlPassword) != 0 {
+		mysqlOption = append(mysqlOption, "-p"+mysqlPassword)
+	}
+	mysqlOption = append(mysqlOption,"-e","source ./goploy.sql")
+	cmd := exec.Command("mysql", mysqlOption...)
 	err = cmd.Run()
 	if err != nil {
 		println(err.Error())
@@ -127,10 +129,10 @@ func install() {
 		mysqlHost,
 		mysqlPort)
 	envContent += fmt.Sprintf("SIGN_KEY=%d\n", time.Now().Unix())
-	envContent += fmt.Sprintf("LOG_PATH=%s\n", strings.TrimRight(logPath, "\n"))
-	envContent += fmt.Sprintf("SSHKEY_PATH=%s\n", strings.TrimRight(sshFile, "\n"))
+	envContent += fmt.Sprintf("LOG_PATH=%s\n", logPath)
+	envContent += fmt.Sprintf("SSHKEY_PATH=%s\n", sshFile)
 	envContent += "ENV=production\n"
-	envContent += fmt.Sprintf("PORT=%s\n", strings.TrimRight(port, "\n"))
+	envContent += fmt.Sprintf("PORT=%s\n", port)
 	println("开始写入配置文件")
 	file, err := os.Create(".env")
 	if err != nil {
