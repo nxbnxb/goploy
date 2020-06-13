@@ -21,7 +21,7 @@ const (
 )
 
 const (
-	TypeProject = 1
+	TypeProject        = 1
 	TypeServerTemplate = 2
 )
 
@@ -41,7 +41,6 @@ type Data struct {
 type Message interface {
 	canSendTo(client *Client) error
 }
-
 
 // Hub is a client struct
 type Hub struct {
@@ -151,7 +150,7 @@ func (hub *Hub) run() {
 			}
 		case data := <-hub.Data:
 			for client := range hub.clients {
-				if  data.Message.canSendTo(client) != nil {
+				if data.Message.canSendTo(client) != nil {
 					continue
 				}
 				// check userIDs list
@@ -162,10 +161,10 @@ func (hub *Hub) run() {
 				}
 				if err := client.Conn.WriteJSON(
 					struct {
-						Type int  `json:"type"`
+						Type    int         `json:"type"`
 						Message interface{} `json:"message"`
 					}{
-						Type: data.Type,
+						Type:    data.Type,
 						Message: data.Message,
 					}); websocket.IsCloseError(err) {
 					hub.Unregister <- client

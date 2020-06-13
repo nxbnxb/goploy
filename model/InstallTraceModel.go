@@ -84,7 +84,7 @@ func (it InstallTrace) GetListByToken() (InstallTraces, error) {
 	return installTraces, nil
 }
 
-// GetPreviewByProjectID InstallTrace row
+// GetPreview InstallTrace row
 func (it InstallTrace) GetPreviewByProjectID() (InstallTraces, error) {
 	rows, err := sq.
 		Select("id,token,server_id,server_name,detail,state,operator_id,operator_name,type,ext,create_time,update_time").

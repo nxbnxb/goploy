@@ -53,7 +53,7 @@ func (deploy Deploy) GetPreview(w http.ResponseWriter, gp *core.Goploy) *core.Re
 
 	type RespData struct {
 		GitTraceList model.PublishTraces `json:"gitTraceList"`
-		Pagination model.Pagination `json:"pagination"`
+		Pagination   model.Pagination    `json:"pagination"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -64,7 +64,21 @@ func (deploy Deploy) GetPreview(w http.ResponseWriter, gp *core.Goploy) *core.Re
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	gitTraceList, pagination, err := model.PublishTrace{ProjectID: projectID}.GetPreviewByProjectID(pagination)
+	userID, err := strconv.ParseInt(gp.URLQuery.Get("userId"), 10, 64)
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	state, err := strconv.ParseInt(gp.URLQuery.Get("state"), 10, 64)
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	gitTraceList, pagination, err := model.PublishTrace{
+		ProjectID:    projectID,
+		PublisherID:  userID,
+		PublishState: int(state),
+	}.GetPreview(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}

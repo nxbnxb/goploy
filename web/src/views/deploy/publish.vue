@@ -76,11 +76,24 @@
     />
     <el-dialog title="构建记录" :visible.sync="dialogVisible" class="publish-record">
       <el-row type="flex">
-        <el-row style="width: 310px">
+        <el-row v-loading="searchPreview.loading" class="publish-preview">
+          <el-select v-model="searchPreview.userId" style="width:120px" placeholder="选择用户" clearable>
+            <el-option
+              v-for="(item, index) in userOption"
+              :key="index"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+          <el-select v-model="searchPreview.state" placeholder="状态" style="width:85px" clearable>
+            <el-option label="成功" :value="1" />
+            <el-option label="失败" :value="0" />
+          </el-select>
+          <el-button type="primary" icon="el-icon-search" @click="searchPreviewList">搜索</el-button>
           <el-radio-group v-model="publishToken" @change="handleDetailChange">
             <el-row v-for="(item, index) in gitTraceList" :key="index">
               <el-row style="margin:5px 0">
-                <el-radio style="margin-left: 10px;margin-right: 5px;padding-right:8px;width: 210px;" :label="item.token" border>
+                <el-radio style="margin-right: 5px;padding-right:8px;width: 210px;" :label="item.token" border>
                   {{ item.publisherName }} commitID: {{ item.commit }}
                   <span v-if="item.publishState === 1" style="color:#67C23A;float:right;line-height:16px;">成功</span>
                   <span v-else style="color:#F56C6C;float:right;line-height:16px;">失败</span>
@@ -89,6 +102,16 @@
               </el-row>
             </el-row>
           </el-radio-group>
+          <el-pagination
+            :total="previewPagination.total"
+            :page-size="previewPagination.rows"
+            :current-page.sync="previewPagination.page"
+            prev-text="上一页"
+            next-text="下一页"
+            style="text-align:right;margin-right:20px"
+            layout="total, prev, next"
+            @current-change="handlePreviewPageChange"
+          />
         </el-row>
         <el-row class="project-detail" style="flex:1;width:100%">
           <el-row v-for="(item, index) in publishLocalTraceList" :key="index">
@@ -207,6 +230,7 @@
 import tableHeight from '@/mixin/tableHeight'
 import { getList, getDetail, getPreview, getCommitList, publish } from '@/api/deploy'
 import { getDeployOption as getDeployGroupOption } from '@/api/group'
+import { getOption as getUserOption } from '@/api/user'
 import { parseTime } from '@/utils'
 
 export default {
@@ -214,7 +238,9 @@ export default {
   data() {
     return {
       groupId: parseInt(localStorage.getItem('groupId')) || 0,
+      userId: '',
       groupOption: [],
+      userOption: [],
       projectName: '',
       publishToken: '',
       commitDialogVisible: false,
@@ -225,8 +251,19 @@ export default {
         page: 1,
         rows: 20
       },
-      commitTableData: [],
+      searchPreview: {
+        loading: false,
+        projectId: '',
+        userId: '',
+        state: ''
+      },
       gitTraceList: [],
+      previewPagination: {
+        page: 1,
+        rows: 11,
+        total: 0
+      },
+      commitTableData: [],
       publishTraceList: [],
       publishLocalTraceList: [],
       publishRemoteTraceList: {},
@@ -279,6 +316,7 @@ export default {
   created() {
     this.getList()
     this.getDeployGroupOption()
+    this.getUserOption()
   },
   methods: {
     parseTime,
@@ -291,6 +329,12 @@ export default {
     getDeployGroupOption() {
       getDeployGroupOption().then((response) => {
         this.groupOption = response.data.groupList || []
+      })
+    },
+
+    getUserOption() {
+      getUserOption().then((response) => {
+        this.userOption = response.data.userList || []
       })
     },
 
@@ -384,9 +428,13 @@ export default {
       })
     },
 
-    handleDetail(data) {
-      this.dialogVisible = true
-      getPreview({ page: 1, rows: 12 }, data.id).then((response) => {
+    getPreviewList() {
+      this.searchPreview.loading = true
+      getPreview(this.previewPagination, {
+        projectId: this.searchPreview.projectId,
+        userId: this.searchPreview.userId || 0,
+        state: this.searchPreview.state === '' ? -1 : this.searchPreview.state
+      }).then((response) => {
         const gitTraceList = response.data.gitTraceList || []
         this.gitTraceList = gitTraceList.map(element => {
           if (element.ext !== '') Object.assign(element, JSON.parse(element.ext))
@@ -397,7 +445,27 @@ export default {
           this.publishToken = this.gitTraceList[0].token
           this.getDetail()
         }
+        this.previewPagination.total = response.data.pagination.total
+      }).finally(() => {
+        this.searchPreview.loading = false
       })
+    },
+
+    searchPreviewList() {
+      this.handlePreviewPageChange(1)
+    },
+
+    handleDetail(data) {
+      this.dialogVisible = true
+      this.searchPreview.projectId = data.id
+      this.searchPreview.userId = ''
+      this.searchPreview.state = ''
+      this.getPreviewList()
+    },
+
+    handlePreviewPageChange(page) {
+      this.previewPagination.page = page
+      this.getPreviewList()
     },
 
     handleDetailChange(lastPublishToken) {
@@ -447,16 +515,24 @@ export default {
 </script>
 <style rel="stylesheet/scss" lang="scss" scoped>
 @import "@/styles/mixin.scss";
+.publish-preview {
+  width: 310px;
+  margin-left: 10px;
+}
+
 .project-detail {
-  height:450px;
+  padding-left:5px;
+  height:470px;
   overflow-y: auto;
   @include scrollBar();
 }
+
 .operation-btn {
   >>>.el-button {
     line-height: 1.15;
   }
 }
+
 @media screen and (max-width: 1440px){
   .publish-record {
     >>>.el-dialog {

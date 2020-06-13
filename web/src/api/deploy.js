@@ -29,12 +29,12 @@ export function getDetail(lastPublishToken) {
  * @param  {int}    id
  * @return {Promise}
  */
-export function getPreview({ page, rows }, projectId) {
+export function getPreview({ page, rows }, params) {
   return request({
     url: '/deploy/getPreview',
     method: 'get',
     params: {
-      page, rows, projectId
+      page, rows, ...params
     }
   })
 }

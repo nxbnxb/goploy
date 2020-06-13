@@ -91,17 +91,28 @@ func (pt PublishTrace) GetListByToken() (PublishTraces, error) {
 	return publishTraces, nil
 }
 
-// GetPreviewByProjectID PublishTrace row
-func (pt PublishTrace) GetPreviewByProjectID(pagination Pagination) (PublishTraces, Pagination, error) {
-	rows, err := sq.
+// GetPreview PublishTrace row
+func (pt PublishTrace) GetPreview(pagination Pagination) (PublishTraces, Pagination, error) {
+	builder := sq.
 		Select("id, token, project_id, project_name, detail, state, publisher_id, publisher_name, type, ext, insert_time, update_time").
 		Column("!EXISTS (SELECT id FROM " + publishTraceTable + " AS pt where pt.state = 0 AND pt.token = publish_trace.token) as publish_state").
 		From(publishTraceTable).
-		Where(sq.Eq{"project_id": pt.ProjectID, "type": Pull}).
+		Where(sq.Eq{"type": Pull})
+	if pt.ProjectID != 0 {
+		builder = builder.Where(sq.Eq{"project_id": pt.ProjectID})
+	}
+	if pt.PublisherID != 0 {
+		builder = builder.Where(sq.Eq{"publisher_id": pt.PublisherID})
+	}
+	if pt.PublishState != -1 {
+		builder = builder.Having(sq.Eq{"publish_state": pt.PublishState})
+	}
+	sql, _, _ := builder.ToSql()
+	println(sql)
+	rows, err := builder.RunWith(DB).
 		OrderBy("update_time DESC").
 		Limit(pagination.Rows).
 		Offset((pagination.Page - 1) * pagination.Rows).
-		RunWith(DB).
 		Query()
 	if err != nil {
 		return nil, pagination, err
@@ -128,11 +139,25 @@ func (pt PublishTrace) GetPreviewByProjectID(pagination Pagination) (PublishTrac
 		}
 		publishTraces = append(publishTraces, publishTrace)
 	}
-	err = sq.
+
+	builder = sq.
 		Select("COUNT(*) AS count").
 		From(publishTraceTable).
-		Where(sq.Eq{"project_id": pt.ProjectID, "type": Pull}).
-		RunWith(DB).
+		Where(sq.Eq{"type": Pull})
+
+	if pt.ProjectID != 0 {
+		builder = builder.Where(sq.Eq{"project_id": pt.ProjectID})
+	}
+	if pt.PublisherID != 0 {
+		builder = builder.Where(sq.Eq{"publisher_id": pt.PublisherID})
+	}
+	if pt.PublishState == 0 {
+		builder = builder.Where("EXISTS (SELECT id FROM " + publishTraceTable + " AS pt where pt.state = 0 AND pt.token = publish_trace.token)")
+	} else if pt.PublishState == 1 {
+		builder = builder.Where("! EXISTS (SELECT id FROM " + publishTraceTable + " AS pt where pt.state = 0 AND pt.token = publish_trace.token)")
+	}
+
+	err = builder.RunWith(DB).
 		QueryRow().
 		Scan(&pagination.Total)
 	if err != nil {
