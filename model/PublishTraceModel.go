@@ -107,8 +107,6 @@ func (pt PublishTrace) GetPreview(pagination Pagination) (PublishTraces, Paginat
 	if pt.PublishState != -1 {
 		builder = builder.Having(sq.Eq{"publish_state": pt.PublishState})
 	}
-	sql, _, _ := builder.ToSql()
-	println(sql)
 	rows, err := builder.RunWith(DB).
 		OrderBy("update_time DESC").
 		Limit(pagination.Rows).
