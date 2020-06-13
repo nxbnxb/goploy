@@ -41,7 +41,24 @@
         <el-row v-show="transformType === 'cron'">
           <el-input v-model="cron.expression" placeholder="* * * * ?" style="width: 450px; margin-bottom:10px" />
           <el-button type="primary" @click="crontabTranslate">转换>></el-button>
-          <el-row>{{ cron.chinese }}</el-row>
+          <el-row style="margin-left: 5px;">{{ cron.chinese }}</el-row>
+          <pre>
+    *    *    *    *    *
+    -    -    -    -    -
+    |    |    |    |    |
+    |    |    |    |    +----- 星期中星期几 (0 - 7) (星期天为0)
+    |    |    |    +---------- 月份 (1 - 12)
+    |    |    +--------------- 一个月中的第几天 (1 - 31)
+    |    +-------------------- 小时 (0 - 23)
+    +------------------------- 分钟 (0 - 59)
+          </pre>
+          <el-row style="padding: 0 5px;">
+            在以上各个字段中，还可以使用以下特殊字符：
+            <p>星号( * )：代表所有可能的值，例如month字段如果是星号，则表示在满足其它字段的制约条件后每月都执行该命令操作。</p>
+            <p>逗号( , )：可以用逗号隔开的值指定一个列表范围，例如，"1,2,5,7,8,9"</p>
+            <p>中杠( - )：可以用整数之间的中杠表示一个整数范围，例如"2-6"表示"2,3,4,5,6"</p>
+            <p>正斜线( / )：可以用正斜线指定时间的间隔频率，例如"0-23/2"表示每两小时执行一次。同时正斜线可以和星号一起使用，例如*/10，如果用在minute字段，表示每十分钟执行一次。</p>
+          </el-row>
         </el-row>
         <el-row v-show="transformType === 'unicode'">
           <el-input
