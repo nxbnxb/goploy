@@ -77,7 +77,7 @@
     <el-dialog title="构建记录" :visible.sync="dialogVisible" class="publish-record">
       <el-row type="flex">
         <el-row v-loading="searchPreview.loading" class="publish-preview">
-          <el-select v-model="searchPreview.userId" style="width:120px" placeholder="选择用户" clearable>
+          <el-select v-model="searchPreview.userId" style="width:142px" placeholder="选择用户" clearable>
             <el-option
               v-for="(item, index) in userOption"
               :key="index"
@@ -85,7 +85,7 @@
               :value="item.id"
             />
           </el-select>
-          <el-select v-model="searchPreview.state" placeholder="状态" style="width:85px" clearable>
+          <el-select v-model="searchPreview.state" placeholder="状态" style="width:95px" clearable>
             <el-option label="成功" :value="1" />
             <el-option label="失败" :value="0" />
           </el-select>
@@ -93,10 +93,10 @@
           <el-radio-group v-model="publishToken" @change="handleDetailChange">
             <el-row v-for="(item, index) in gitTraceList" :key="index">
               <el-row style="margin:5px 0">
-                <el-radio style="margin-right: 5px;padding-right:8px;width: 210px;" :label="item.token" border>
-                  {{ item.publisherName }} commitID: {{ item.commit }}
-                  <span v-if="item.publishState === 1" style="color:#67C23A;float:right;line-height:16px;">成功</span>
-                  <span v-else style="color:#F56C6C;float:right;line-height:16px;">失败</span>
+                <el-radio class="publish-commit" :label="item.token" border>
+                  <span class="publish-name">{{ item.publisherName }}</span> <span class="publish-commitID">commitID: {{ item.commit }}</span>
+                  <span v-if="item.publishState === 1" style="color:#67C23A;float:right;">成功</span>
+                  <span v-else style="color:#F56C6C;float:right;">失败</span>
                 </el-radio>
                 <el-button type="danger" plain @click="rollback(item)">rebuild</el-button>
               </el-row>
@@ -515,9 +515,31 @@ export default {
 </script>
 <style rel="stylesheet/scss" lang="scss" scoped>
 @import "@/styles/mixin.scss";
-.publish-preview {
-  width: 310px;
-  margin-left: 10px;
+
+.publish {
+  &-preview {
+    width: 330px;
+    margin-left: 10px;
+  }
+  &-commit{
+    margin-right: 5px;
+    padding-right:8px;
+    width: 240px;
+    line-height: 12px;
+  }
+  &-commitID{
+    display: inline-block;
+    vertical-align: top;
+  }
+  &-name {
+    width: 60px;
+    display: inline-block;
+    text-align: center;
+    overflow:hidden; //超出的文本隐藏
+    vertical-align: top;
+    text-overflow:ellipsis; //溢出用省略号显示
+    white-space:nowrap; //溢出不换行
+  }
 }
 
 .project-detail {
