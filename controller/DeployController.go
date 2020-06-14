@@ -354,6 +354,16 @@ func gitSync(project model.Project) (Commit, error) {
 	if err != nil {
 		return Commit{}, err
 	}
+	ws.GetHub().Data <- &ws.Data{
+		Type:    ws.TypeProject,
+		Message: ws.ProjectMessage{
+			ProjectID: project.ID,
+			ProjectName: project.Name,
+			State: ws.GitPull,
+			Message: "get pull info",
+			Ext: commit[0],
+		},
+	}
 	return commit[0], err
 }
 
@@ -365,6 +375,16 @@ func gitRollback(commitSha string, project model.Project) (Commit, error) {
 	commit, err := gitCommitLog(project, 1, 0)
 	if err != nil {
 		return Commit{}, err
+	}
+	ws.GetHub().Data <- &ws.Data{
+		Type:    ws.TypeProject,
+		Message: ws.ProjectMessage{
+			ProjectID: project.ID,
+			ProjectName: project.Name,
+			State: ws.GitReset,
+			Message: "get pull info",
+			Ext: commit[0],
+		},
 	}
 	return commit[0], err
 }

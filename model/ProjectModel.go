@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 )
 
@@ -24,6 +25,7 @@ type Project struct {
 	AutoDeploy            uint8  `json:"autoDeploy"`
 	PublisherID           int64  `json:"publisherId"`
 	PublisherName         string `json:"publisherName"`
+	PublishExt            string `json:"publishExt"`
 	DeployState           uint8  `json:"deployState"`
 	LastPublishToken      string `json:"lastPublishToken"`
 	NotifyType            uint8  `json:"notifyType"`
@@ -265,30 +267,33 @@ func (p Project) GetListByNameInGroupIDs(groupIDs []string, pagination Paginatio
 }
 
 func (p Project) GetUserProjectList(userID int64, userRole string, groupIDStr string) (Projects, error) {
-	var builder sq.SelectBuilder
+	builder := sq.
+		Select(`
+			project.id, 
+			project.name,
+			project.publisher_id,
+			project.publisher_name,
+			publish_trace.ext,
+			project.group_id,
+			project.environment, 
+			project.branch, 
+			project.last_publish_token,
+			project.deploy_state, 
+			project.update_time`).
+		Where(sq.Eq{"project.state": Enable}).
+		OrderBy("project.id DESC")
 	if userRole == "admin" || userRole == "manager" {
-		builder = sq.
-			Select("id, name, publisher_id, publisher_name, group_id, environment, branch, last_publish_token, deploy_state, update_time").
-			From(projectTable).
-			Where(sq.Eq{"state": Enable}).
-			OrderBy("id DESC")
+		builder = builder.From(projectTable).
+			LeftJoin(fmt.Sprintf("%[1]s ON %[1]s.token = %s.last_publish_token and type = %d", publishTraceTable, projectTable, Pull))
 	} else if userRole == "group-manager" {
-		builder = sq.
-			Select("id, name, publisher_id, publisher_name, group_id, environment, branch, last_publish_token, deploy_state, update_time").
-			From(projectTable).
-			Where("group_id IN (?) or id in (select project_id from "+projectUserTable+" where user_id = ?)", groupIDStr, userID).
-			Where(sq.Eq{"state": Enable}).
-			OrderBy("id DESC")
+		builder = builder.From(projectTable).
+			LeftJoin(fmt.Sprintf("%[1]s ON %[1]s.token = %s.last_publish_token and type = %d", publishTraceTable, projectTable, Pull)).
+			Where("group_id IN (?) or id in (select project_id from "+projectUserTable+" where user_id = ?)", groupIDStr, userID)
 	} else {
-		builder = sq.
-			Select("project_id, project.name, publisher_id, publisher_name, project.group_id, project.environment, project.branch, project.last_publish_token, project.deploy_state, project.update_time").
-			From(projectUserTable).
+		builder = builder.From(projectUserTable).
 			LeftJoin(projectTable + " ON project_user.project_id = project.id").
-			Where(sq.Eq{
-				"project_user.user_id": userID,
-				"project.state":        Enable,
-			}).
-			OrderBy("project_id DESC")
+			LeftJoin(fmt.Sprintf("%[1]s ON %[1]s.token = %s.last_publish_token and type = %d", publishTraceTable, projectTable, Pull)).
+			Where(sq.Eq{"project_user.user_id": userID})
 	}
 
 	if p.GroupID != 0 {
@@ -311,6 +316,7 @@ func (p Project) GetUserProjectList(userID int64, userRole string, groupIDStr st
 			&project.Name,
 			&project.PublisherID,
 			&project.PublisherName,
+			&project.PublishExt,
 			&project.GroupID,
 			&project.Environment,
 			&project.Branch,
@@ -392,7 +398,6 @@ func (p Project) GetAllByName() (Projects, error) {
 	}
 	return projects, nil
 }
-
 
 // GetData add project information to p *Project
 func (p Project) GetData() (Project, error) {

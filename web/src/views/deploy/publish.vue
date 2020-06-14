@@ -35,6 +35,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="branch" label="分支" align="center" />
+      <el-table-column prop="commit" label="commitID" width="150" align="center">
+        <template slot-scope="scope">
+          <el-tooltip effect="dark" :content="scope.row['commit']" placement="top">
+            <span>{{ scope.row['commit'] ? scope.row['commit'].substring(0, 6) : '' }}</span>
+          </el-tooltip>
+        </template>
+      </el-table-column>
       <el-table-column prop="deployState" label="构建状态" width="230" align="center">
         <template slot-scope="scope">
           <el-tag :type="scope.row.tagType" effect="plain">{{ scope.row.tagText }}</el-tag>
@@ -307,6 +314,9 @@ export default {
           this.tableData[projectIndex].tagType = 'success'
         }
 
+        if (data['ext']) {
+          Object.assign(this.tableData[projectIndex], data['ext'])
+        }
         this.tableData[projectIndex].deployState = data.state
         this.tableData[projectIndex].publisherName = data.username
         this.tableData[projectIndex].updateTime = parseTime(new Date())
@@ -355,6 +365,11 @@ export default {
             element.progressStatus = 'warning'
             element.tagType = 'warning'
             element.tagText = '构建中'
+          }
+          try {
+            Object.assign(element, JSON.parse(element.publishExt))
+          } catch (error) {
+            console.log('项目尚未构建')
           }
           return element
         })

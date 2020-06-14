@@ -6,10 +6,11 @@ import (
 
 // ProjectMessage is publish project message struct
 type ProjectMessage struct {
-	ProjectID   int64  `json:"projectId"`
-	ProjectName string `json:"projectName"`
-	State       uint8  `json:"state"`
-	Message     string `json:"message"`
+	ProjectID   int64       `json:"projectId"`
+	ProjectName string      `json:"projectName"`
+	State       uint8       `json:"state"`
+	Message     string      `json:"message"`
+	Ext         interface{} `json:"ext"`
 }
 
 const (
