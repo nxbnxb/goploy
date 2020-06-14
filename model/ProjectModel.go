@@ -273,7 +273,7 @@ func (p Project) GetUserProjectList(userID int64, userRole string, groupIDStr st
 			project.name,
 			project.publisher_id,
 			project.publisher_name,
-			publish_trace.ext,
+			IFNULL(publish_trace.ext, '{}'),
 			project.group_id,
 			project.environment, 
 			project.branch, 
