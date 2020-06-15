@@ -288,7 +288,7 @@ func (p Project) GetUserProjectList(userID int64, userRole string, groupIDStr st
 	} else if userRole == "group-manager" {
 		builder = builder.From(projectTable).
 			LeftJoin(fmt.Sprintf("%[1]s ON %[1]s.token = %s.last_publish_token and type = %d", publishTraceTable, projectTable, Pull)).
-			Where("group_id IN (?) or id in (select project_id from "+projectUserTable+" where user_id = ?)", groupIDStr, userID)
+			Where("group_id IN (?) or project.id in (select project_id from "+projectUserTable+" where user_id = ?)", groupIDStr, userID)
 	} else {
 		builder = builder.From(projectUserTable).
 			LeftJoin(projectTable + " ON project_user.project_id = project.id").
