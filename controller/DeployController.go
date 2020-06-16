@@ -106,7 +106,7 @@ func (deploy Deploy) GetDetail(w http.ResponseWriter, gp *core.Goploy) *core.Res
 // GetCommitList get latest 10 commit list
 func (deploy Deploy) GetCommitList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		CommitList []Commit `json:"commitList"`
+		CommitList []utils.Commit `json:"commitList"`
 	}
 
 	id, err := strconv.ParseInt(gp.URLQuery.Get("id"), 10, 64)
@@ -118,11 +118,26 @@ func (deploy Deploy) GetCommitList(w http.ResponseWriter, gp *core.Goploy) *core
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	commitList, err := gitCommitLog(project, 10, 0)
-
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
+	srcPath := core.RepositoryPath + project.Name
+	git := utils.GIT{Dir: srcPath}
+	if err := git.Clean([]string{"-f"}); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error() + ", detail: " + git.Err.String()}
 	}
+
+	if err := git.Checkout([]string{"--", "."}); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error() + ", detail: " + git.Err.String()}
+	}
+
+	if err := git.Pull([]string{}); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error() + ", detail: " + git.Err.String()}
+	}
+
+	if err := git.Log([]string{"--stat", "--pretty=format:`start`%H`%an`%at`%s`", "-n", "10"}); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error() + ", detail: " + git.Err.String()}
+	}
+
+	commitList := utils.ParseGITLog(git.Output.String())
+
 	return &core.Response{Data: RespData{CommitList: commitList}}
 }
 
@@ -242,7 +257,7 @@ func execSync(userInfo model.User, project model.Project, projectServers model.P
 		PublisherName: userInfo.Name,
 		Type:          model.Pull,
 	}
-	var gitCommitInfo Commit
+	var gitCommitInfo utils.Commit
 	var err error
 	if len(commitSha) == 0 {
 		gitCommitInfo, err = gitSync(project)
@@ -341,112 +356,102 @@ func execSync(userInfo model.User, project model.Project, projectServers model.P
 	return
 }
 
-func gitSync(project model.Project) (Commit, error) {
+func gitSync(project model.Project) (utils.Commit, error) {
 	if err := gitCreate(project); err != nil {
-		return Commit{}, err
+		return utils.Commit{}, err
 	}
 
 	if err := gitPull(project); err != nil {
-		return Commit{}, err
+		return utils.Commit{}, err
 	}
 
-	commit, err := gitCommitLog(project, 1, 0)
+	commit, err := gitCommitLog(project)
 	if err != nil {
-		return Commit{}, err
+		return utils.Commit{}, err
 	}
 	ws.GetHub().Data <- &ws.Data{
-		Type:    ws.TypeProject,
+		Type: ws.TypeProject,
 		Message: ws.ProjectMessage{
-			ProjectID: project.ID,
+			ProjectID:   project.ID,
 			ProjectName: project.Name,
-			State: ws.GitPull,
-			Message: "get pull info",
-			Ext: commit[0],
+			State:       ws.GitPull,
+			Message:     "get pull info",
+			Ext:         commit,
 		},
 	}
-	return commit[0], err
+	return commit, err
 }
 
-func gitRollback(commitSha string, project model.Project) (Commit, error) {
+func gitRollback(commitSha string, project model.Project) (utils.Commit, error) {
 	if err := gitReset(commitSha, project); err != nil {
-		return Commit{}, err
+		return utils.Commit{}, err
 	}
 
-	commit, err := gitCommitLog(project, 1, 0)
+	commit, err := gitCommitLog(project)
 	if err != nil {
-		return Commit{}, err
+		return utils.Commit{}, err
 	}
 	ws.GetHub().Data <- &ws.Data{
-		Type:    ws.TypeProject,
+		Type: ws.TypeProject,
 		Message: ws.ProjectMessage{
-			ProjectID: project.ID,
+			ProjectID:   project.ID,
 			ProjectName: project.Name,
-			State: ws.GitReset,
-			Message: "get pull info",
-			Ext: commit[0],
+			State:       ws.GitReset,
+			Message:     "get pull info",
+			Ext:         commit,
 		},
 	}
-	return commit[0], err
+	return commit, err
 }
 
 func gitCreate(project model.Project) error {
 	srcPath := core.RepositoryPath + project.Name
-	if _, err := os.Stat(srcPath); err != nil {
-		if err := os.RemoveAll(srcPath); err != nil {
-			return err
-		}
-		repo := project.URL
+	// 已有文件夹无需删除
+	if _, err := os.Stat(srcPath); err == nil {
+		return nil
+	}
+	// 删除目录
+	if err := os.RemoveAll(srcPath); err != nil {
+		return err
+	}
+	git := utils.GIT{}
+	ws.GetHub().Data <- &ws.Data{
+		Type:    ws.TypeProject,
+		Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitClone, Message: "git clone"},
+	}
+	core.Log(core.TRACE, "projectID:"+strconv.FormatUint(uint64(project.ID), 10)+" 项目初始化 git clone")
+	if err := git.Clone([]string{project.URL, srcPath}); err != nil {
+		core.Log(core.ERROR, "projectID:"+strconv.FormatUint(uint64(project.ID), 10)+" 项目初始化失败:"+err.Error())
+		return errors.New("项目初始化失败")
+	}
+
+	if project.Branch != "master" {
 		ws.GetHub().Data <- &ws.Data{
 			Type:    ws.TypeProject,
-			Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitClone, Message: "git clone"},
+			Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitSwitchBranch, Message: "git switch branch"},
 		}
-		cmd := exec.Command("git", "clone", repo, srcPath)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		core.Log(core.TRACE, "projectID:"+strconv.FormatUint(uint64(project.ID), 10)+" 项目初始化 git clone")
-		if err := cmd.Run(); err != nil {
-			core.Log(core.ERROR, "projectID:"+strconv.FormatUint(uint64(project.ID), 10)+" 项目初始化失败:"+err.Error())
-			return errors.New("项目初始化失败")
+		git.Dir = srcPath
+		if err := git.Checkout([]string{"-b", project.Branch, "origin/" + project.Branch}); err != nil {
+			core.Log(core.ERROR, err.Error()+", detail: "+git.Err.String())
+			os.RemoveAll(srcPath)
+			return errors.New(git.Err.String())
 		}
-
-		if project.Branch != "master" {
-			ws.GetHub().Data <- &ws.Data{
-				Type:    ws.TypeProject,
-				Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitSwitchBranch, Message: "git switch branch"},
-			}
-			checkout := exec.Command("git", "checkout", "-b", project.Branch, "origin/"+project.Branch)
-			checkout.Dir = srcPath
-			var checkoutOutbuf, checkoutErrbuf bytes.Buffer
-			checkout.Stdout = &checkoutOutbuf
-			checkout.Stderr = &checkoutErrbuf
-			if err := checkout.Run(); err != nil {
-				core.Log(core.ERROR, checkoutErrbuf.String())
-				os.RemoveAll(srcPath)
-				return errors.New(checkoutErrbuf.String())
-			}
-		}
-		core.Log(core.TRACE, "projectID:"+strconv.FormatUint(uint64(project.ID), 10)+" 项目初始化成功")
 	}
+	core.Log(core.TRACE, "projectID:"+strconv.FormatUint(uint64(project.ID), 10)+" 项目初始化成功")
 	return nil
 }
 
 func gitPull(project model.Project) error {
-	srcPath := core.RepositoryPath + project.Name
-
+	git := utils.GIT{Dir: core.RepositoryPath + project.Name}
 	// git clean removes all not tracked files
 	ws.GetHub().Data <- &ws.Data{
 		Type:    ws.TypeProject,
 		Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitClean, Message: "git clean"},
 	}
-	clean := exec.Command("git", "clean", "-f")
-	clean.Dir = srcPath
-	var cleanOutbuf, cleanErrbuf bytes.Buffer
-	clean.Stdout = &cleanOutbuf
-	clean.Stderr = &cleanErrbuf
 	core.Log(core.TRACE, "projectID:"+strconv.FormatInt(project.ID, 10)+" git clean -f")
-	if err := clean.Run(); err != nil {
-		core.Log(core.ERROR, cleanErrbuf.String())
-		return errors.New(cleanErrbuf.String())
+	if err := git.Clean([]string{"-f"}); err != nil {
+		core.Log(core.ERROR, err.Error()+", detail: "+git.Err.String())
+		return errors.New(git.Err.String())
 	}
 
 	// git checkout clears all not staged changes.
@@ -454,32 +459,21 @@ func gitPull(project model.Project) error {
 		Type:    ws.TypeProject,
 		Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitCheckout, Message: "git checkout"},
 	}
-	checkout := exec.Command("git", "checkout", "--", ".")
-	checkout.Dir = srcPath
-	var checkoutOutbuf, checkoutErrbuf bytes.Buffer
-	checkout.Stdout = &checkoutOutbuf
-	checkout.Stderr = &checkoutErrbuf
 	core.Log(core.TRACE, "projectID:"+strconv.FormatInt(project.ID, 10)+" git checkout -- .")
-	if err := checkout.Run(); err != nil {
-		core.Log(core.ERROR, checkoutErrbuf.String())
-		return errors.New(checkoutErrbuf.String())
+	if err := git.Checkout([]string{"--", "."}); err != nil {
+		core.Log(core.ERROR, err.Error()+", detail: "+git.Err.String())
+		return errors.New(git.Err.String())
 	}
 
 	ws.GetHub().Data <- &ws.Data{
 		Type:    ws.TypeProject,
 		Message: ws.ProjectMessage{ProjectID: project.ID, ProjectName: project.Name, State: ws.GitPull, Message: "git pull"},
 	}
-	pull := exec.Command("git", "pull")
-	pull.Dir = srcPath
-	var pullOutbuf, pullErrbuf bytes.Buffer
-	pull.Stdout = &pullOutbuf
-	pull.Stderr = &pullErrbuf
 	core.Log(core.TRACE, "projectID:"+strconv.FormatInt(project.ID, 10)+" git pull")
-	if err := pull.Run(); err != nil {
-		core.Log(core.ERROR, pullErrbuf.String())
-		return errors.New(pullErrbuf.String())
+	if err := git.Pull([]string{}); err != nil {
+		core.Log(core.ERROR, err.Error()+", detail: "+git.Err.String())
+		return errors.New(git.Err.String())
 	}
-	core.Log(core.TRACE, pullOutbuf.String())
 	return nil
 }
 
@@ -504,46 +498,15 @@ func gitReset(commit string, project model.Project) error {
 	return nil
 }
 
-type Commit struct {
-	Commit    string `json:"commit"`
-	Author    string `json:"author"`
-	Timestamp int    `json:"timestamp"`
-	Message   string `json:"message"`
-	Diff      string `json:"diff"`
-}
+func gitCommitLog(project model.Project) (utils.Commit, error) {
+	git := utils.GIT{Dir: core.RepositoryPath + project.Name}
 
-func gitCommitLog(project model.Project, number uint64, offset uint64) ([]Commit, error) {
-	srcPath := core.RepositoryPath + project.Name
-	logCommands := []string{"log", "--stat", "--pretty=format:`start`%H`%an`%at`%s`", "-n", strconv.FormatUint(number, 10)}
-	if offset != 0 {
-		logCommands = append(logCommands, "--skip", strconv.FormatUint(offset, 10))
+	if err := git.Log([]string{"--stat", "--pretty=format:`start`%H`%an`%at`%s`", "-n", "1"}); err != nil {
+		core.Log(core.ERROR, err.Error()+", detail: "+git.Err.String())
+		return utils.Commit{}, errors.New(git.Err.String())
 	}
-	git := exec.Command("git", logCommands...)
-	git.Dir = srcPath
-	var gitOutbuf, gitErrbuf bytes.Buffer
-	git.Stdout = &gitOutbuf
-	git.Stderr = &gitErrbuf
-	core.Log(core.TRACE, "projectID:"+strconv.FormatInt(project.ID, 10)+" git "+strings.Join(logCommands, " "))
-	if err := git.Run(); err != nil {
-		core.Log(core.ERROR, gitErrbuf.String())
-		return nil, errors.New(gitErrbuf.String())
-	}
-	unformatCommitList := strings.Split(gitOutbuf.String(), "`start`")
-	unformatCommitList = unformatCommitList[1:]
-	var commitList []Commit
-	for _, commitRow := range unformatCommitList {
-		commitRowSplit := strings.Split(commitRow, "`")
-		timestamp, _ := strconv.Atoi(commitRowSplit[2])
-		commitList = append(commitList, Commit{
-			Commit:    commitRowSplit[0],
-			Author:    commitRowSplit[1],
-			Timestamp: timestamp,
-			Message:   commitRowSplit[3],
-			Diff:      strings.Trim(commitRowSplit[4], "\n"),
-		})
-	}
-
-	return commitList, nil
+	commitList := utils.ParseGITLog(git.Output.String())
+	return commitList[0], nil
 }
 
 func runAfterPullScript(project model.Project) (string, error) {

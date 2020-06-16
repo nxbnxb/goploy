@@ -47,7 +47,8 @@ export function getCommitList(id) {
   return request({
     url: '/deploy/getCommitList',
     method: 'get',
-    params: { id }
+    params: { id },
+    timeout: 0
   })
 }
 

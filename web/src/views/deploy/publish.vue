@@ -202,6 +202,8 @@
     </el-dialog>
     <el-dialog title="commit管理" :visible.sync="commitDialogVisible">
       <el-table
+        v-loading="commitTableLoading"
+        element-loading-text="获取最近的commit历史，请稍候"
         border
         stripe
         highlight-current-row
@@ -270,6 +272,7 @@ export default {
         rows: 11,
         total: 0
       },
+      commitTableLoading: false,
       commitTableData: [],
       publishTraceList: [],
       publishLocalTraceList: [],
@@ -490,11 +493,14 @@ export default {
 
     handlePublishCommand(data) {
       const id = data.id
+      this.commitDialogVisible = true
+      this.commitTableLoading = true
       getCommitList(id).then(response => {
         this.commitTableData = response.data.commitList.map(element => {
           return Object.assign(element, { projectId: id })
         })
-        this.commitDialogVisible = true
+      }).finally(() => {
+        this.commitTableLoading = false
       })
     },
 
