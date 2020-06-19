@@ -49,7 +49,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="updateTime" label="上次构建时间" width="160" align="center" />
-      <el-table-column prop="operation" label="操作" width="255" fixed="right">
+      <el-table-column prop="operation" label="操作" width="255" fixed="right" align="center">
         <template slot-scope="scope">
           <el-row class="operation-btn">
             <el-dropdown
@@ -66,6 +66,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown
+              v-if="[$global.Admin, $global.Manager, $global.GroupManager].indexOf($store.getters.role) !== -1"
               split-button
               trigger="click"
               :disabled="scope.row.deployState === 1"
