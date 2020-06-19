@@ -49,7 +49,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="updateTime" label="上次构建时间" width="160" align="center" />
-      <el-table-column prop="operation" label="操作" width="165" fixed="right">
+      <el-table-column prop="operation" label="操作" width="255" fixed="right">
         <template slot-scope="scope">
           <el-row class="operation-btn">
             <el-dropdown
@@ -63,6 +63,19 @@
               构建
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item :command="scope.row">选择具体commit</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+            <el-dropdown
+              split-button
+              trigger="click"
+              :disabled="scope.row.deployState === 1"
+              type="warning"
+              @click="handleAddProjectTask(scope.row)"
+              @command="handleProjectTaskCommand"
+            >
+              定时
+              <el-dropdown-menu slot="dropdown" style="min-width:84px;text-align:center;">
+                <el-dropdown-item :command="scope.row">定时构建管理</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-button type="success" @click="handleDetail(scope.row)">详情</el-button>
@@ -233,11 +246,81 @@
         <el-button @click="commitDialogVisible = false">取 消</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="定时构建设置" :visible.sync="taskDialogVisible" width="600px">
+      <el-form ref="taskForm" :rules="taskFormRules" :model="taskFormData" label-width="120px">
+        <el-form-item label="项目名称">
+          <span>{{ taskFormProps.projectName }}</span>
+        </el-form-item>
+        <el-form-item label="commitId" prop="commitId">
+          <el-select v-model="taskFormData.commitId" placeholder="选择CommitID" style="width: 400px">
+            <el-option
+              v-for="(item, index) in taskFormProps.commitOptions"
+              :key="index"
+              :label="item.commit+'('+item.author+')'"
+              :value="item.commit"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="时间" prop="date">
+          <el-date-picker
+            v-model="taskFormData.date"
+            :picker-options="taskFormProps.pickerOptions"
+            type="datetime"
+            placeholder="选择日期时间"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            style="width: 400px"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="taskDialogVisible = false">取 消</el-button>
+        <el-button :disabled="taskFormProps.disabled" type="primary" @click="submitTask">确 定</el-button>
+      </div>
+    </el-dialog>
+    <el-dialog title="定时构建管理" :visible.sync="taskListDialogVisible">
+      <el-table
+        v-loading="taskTableLoading"
+        border
+        stripe
+        highlight-current-row
+        max-height="447px"
+        :data="taskTableData"
+      >
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="projectName" label="项目名称" width="150" />
+        <el-table-column prop="commitId" label="commit" width="290" />
+        <el-table-column prop="date" label="日期" width="150" />
+        <el-table-column prop="isRun" label="任务" width="60">
+          <template slot-scope="scope">
+            {{ scope.row.isRun === 1 ? '已运行': '未运行' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="state" label="状态" width="50">
+          <template slot-scope="scope">
+            {{ scope.row.state === 1 ? '有效': '无效' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="creator" label="创建人" />
+        <el-table-column prop="editor" label="修改人" />
+        <el-table-column prop="insertTime" label="插入时间" width="135" />
+        <el-table-column prop="updateTime" label="更新时间" width="135" />
+        <el-table-column prop="operation" label="操作" width="150" align="center" fixed="right">
+          <template slot-scope="scope">
+            <el-button type="primary" :disabled="scope.row.isRun === 1 || scope.row.state === 0" @click="handleEditProjectTask(scope.row)">修改</el-button>
+            <el-button type="danger" :disabled="scope.row.isRun === 1 || scope.row.state === 0" @click="removeProjectTask(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="commitDialogVisible = false">取 消</el-button>
+      </div>
+    </el-dialog>
   </el-row>
 </template>
 <script>
 import tableHeight from '@/mixin/tableHeight'
 import { getList, getDetail, getPreview, getCommitList, publish } from '@/api/deploy'
+import { addTask, editTask, removeTask, getTaskList } from '@/api/project'
 import { getDeployOption as getDeployGroupOption } from '@/api/group'
 import { getOption as getUserOption } from '@/api/user'
 import { parseTime } from '@/utils'
@@ -253,12 +336,45 @@ export default {
       projectName: '',
       publishToken: '',
       commitDialogVisible: false,
+      taskDialogVisible: false,
+      taskListDialogVisible: false,
       dialogVisible: false,
       tableData: [],
       pagination: {
         total: 0,
         page: 1,
         rows: 20
+      },
+      taskTableLoading: false,
+      taskTableData: [],
+      taskPagination: {
+        total: 0,
+        page: 1,
+        rows: 20
+      },
+      taskFormProps: {
+        projectName: '',
+        disabled: false,
+        commitOptions: [],
+        pickerOptions: {
+          disabledDate(time) {
+            return time.getTime() < Date.now() - 3600 * 1000 * 24
+          }
+        }
+      },
+      taskFormData: {
+        id: 0,
+        projectId: '',
+        commitId: '',
+        date: ''
+      },
+      taskFormRules: {
+        commitId: [
+          { required: true, message: '请选择CommitID', trigger: 'change' }
+        ],
+        date: [
+          { required: true, message: '请选择日期', trigger: 'change' }
+        ]
       },
       searchPreview: {
         loading: false,
@@ -504,6 +620,99 @@ export default {
       })
     },
 
+    handleAddProjectTask(data) {
+      this.taskDialogVisible = true
+      this.taskFormData.id = 0
+      if (this.taskFormData.projectId !== data.id) {
+        this.taskFormData.projectId = data.id
+        this.taskFormProps.projectName = data.name
+        const id = data.id
+        getCommitList(id).then(response => {
+          this.taskFormProps.commitOptions = response.data.commitList || []
+        })
+      } else {
+        this.taskFormData.commitId = ''
+        this.taskFormData.date = ''
+      }
+    },
+
+    handleEditProjectTask(data) {
+      this.taskDialogVisible = true
+      this.taskFormData.id = data.id
+      this.taskFormData.commitId = data.commitId
+      this.taskFormData.date = data.date
+      if (this.taskFormData.projectId !== data.projectId) {
+        this.taskFormProps.projectName = data.projectName
+        getCommitList(data.projectId).then(response => {
+          this.taskFormProps.commitOptions = response.data.commitList || []
+        })
+      }
+    },
+
+    handleProjectTaskCommand(data) {
+      this.taskListDialogVisible = true
+      this.taskTableLoading = true
+      getTaskList(this.taskPagination, data.id).then(response => {
+        const projectTaskList = response.data.projectTaskList || []
+        this.taskTableData = projectTaskList.map(element => {
+          return Object.assign(element, { projectId: data.id, projectName: data.name })
+        })
+        this.taskPagination.total = response.data.pagination.total
+      }).finally(() => { this.taskTableLoading = false })
+    },
+
+    submitTask() {
+      this.$refs.taskForm.validate((valid) => {
+        if (valid) {
+          this.taskFormProps.disabled = true
+          if (this.taskFormData.id === 0) {
+            addTask(this.taskFormData).then(response => {
+              this.$message.success('添加成功')
+            }).finally(() => {
+              this.taskFormProps.disabled = false
+              this.taskDialogVisible = false
+            })
+          } else {
+            editTask(this.taskFormData).then(response => {
+              this.$message.success('修改成功')
+              const projectTaskIndex = this.taskTableData.findIndex(element => element.id === this.taskFormData.id)
+              this.taskTableData[projectTaskIndex]['commitId'] = this.taskFormData.commitId
+              this.taskTableData[projectTaskIndex]['date'] = this.taskFormData.date
+              this.taskTableData[projectTaskIndex]['editor'] = this.$store.getters.name
+              this.taskTableData[projectTaskIndex]['editorId'] = this.$store.getters.uid
+              this.taskTableData[projectTaskIndex]['updateTime'] = parseTime(new Date())
+            }).finally(() => {
+              this.taskFormProps.disabled = false
+              this.taskDialogVisible = false
+            })
+          }
+        } else {
+          return false
+        }
+      })
+    },
+
+    removeProjectTask(data) {
+      this.$confirm('此操作删除' + data.projectName + '的定时任务, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        removeTask(data.id).then((response) => {
+          const projectTaskIndex = this.taskTableData.findIndex(element => element.id === data.id)
+          this.taskTableData[projectTaskIndex]['state'] = 0
+          this.taskTableData[projectTaskIndex]['editor'] = this.$store.getters.name
+          this.taskTableData[projectTaskIndex]['editorId'] = this.$store.getters.uid
+          this.taskTableData[projectTaskIndex]['updateTime'] = parseTime(new Date())
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消操作'
+        })
+      })
+    },
+
     rollback(data) {
       this.$confirm('此操作将重新构建' + data.commit + ', 是否继续?', '提示', {
         confirmButtonText: '确定',
@@ -514,6 +723,7 @@ export default {
           const projectIndex = this.tableData.findIndex(element => element.id === data.projectId)
           this.tableData[projectIndex].deployState = 1
           this.commitDialogVisible = false
+          this.dialogVisible = false
         })
       }).catch(() => {
         this.$message({

@@ -46,6 +46,10 @@ func Init() *router.Router {
 	rt.Add("/project/addUser", router.POST, controller.Project{}.AddUser).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 	rt.Add("/project/removeProjectServer", router.DELETE, controller.Project{}.RemoveProjectServer).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 	rt.Add("/project/removeProjectUser", router.DELETE, controller.Project{}.RemoveProjectUser).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/project/addTask", router.POST, controller.Project{}.AddTask).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/project/editTask", router.POST, controller.Project{}.EditTask).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/project/removeTask", router.POST, controller.Project{}.RemoveTask).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/project/getTaskList", router.GET, controller.Project{}.GetTaskList).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 
 	//// deploy route
 	rt.Add("/deploy/getList", router.GET, controller.Deploy{}.GetList)

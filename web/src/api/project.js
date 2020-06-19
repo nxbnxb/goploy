@@ -143,3 +143,39 @@ export function removeProjectServer(projectServerId) {
     }
   })
 }
+
+export function addTask(data) {
+  return request({
+    url: '/project/addTask',
+    method: 'post',
+    data
+  })
+}
+
+export function editTask(data) {
+  return request({
+    url: '/project/editTask',
+    method: 'post',
+    data
+  })
+}
+
+export function removeTask(id) {
+  return request({
+    url: '/project/removeTask',
+    method: 'post',
+    data: { id }
+  })
+}
+
+/**
+ * @param  {id} id
+ * @return {Promise}
+ */
+export function getTaskList({ page, rows }, id) {
+  return request({
+    url: '/project/getTaskList',
+    method: 'get',
+    params: { page, rows, id }
+  })
+}

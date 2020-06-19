@@ -139,7 +139,7 @@ func (s Server) GetData() (Server, error) {
 	return server, nil
 }
 
-// AddRow add one row to table server and add id to s.ID
+// AddRow add one row to table server
 func (s Server) AddRow() (int64, error) {
 	result, err := sq.
 		Insert(serverTable).

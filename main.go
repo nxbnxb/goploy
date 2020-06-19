@@ -7,6 +7,7 @@ import (
 	"goploy/core"
 	"goploy/model"
 	"goploy/route"
+	"goploy/task"
 	"goploy/utils"
 	"goploy/ws"
 	"log"
@@ -27,6 +28,7 @@ func main() {
 	model.Init()
 	ws.Init()
 	route.Init()
+	task.Init()
 	err := http.ListenAndServe(":"+os.Getenv("PORT"), nil) //设置监听的端口
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

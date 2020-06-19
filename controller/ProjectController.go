@@ -114,7 +114,6 @@ func (project Project) GetBindUserList(w http.ResponseWriter, gp *core.Goploy) *
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	return &core.Response{Data: RespData{ProjectUsers: projectUsersMap}}
-
 }
 
 // GetBindProjectList project detail
@@ -456,6 +455,104 @@ func (project Project) RemoveProjectUser(w http.ResponseWriter, gp *core.Goploy)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+	return &core.Response{}
+}
+
+// GetTaskList project task list
+func (project Project) GetTaskList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		ProjectTask model.ProjectTasks `json:"projectTaskList"`
+		Pagination  model.Pagination   `json:"pagination"`
+	}
+	pagination, err := model.PaginationFrom(gp.URLQuery)
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	id, err := strconv.ParseInt(gp.URLQuery.Get("id"), 10, 64)
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	projectTaskList, pagination, err := model.ProjectTask{ProjectID: id}.GetListByProjectID(pagination)
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{ProjectTask: projectTaskList, Pagination: pagination}}
+}
+
+// AddTask to project task
+func (project Project) AddTask(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type ReqData struct {
+		ProjectID int64  `json:"projectId" validate:"gt=0"`
+		CommitID  string `json:"commitId" validate:"len=40"`
+		Date      string `json:"date" validate:"required"`
+	}
+	var reqData ReqData
+	if err := verify(gp.Body, &reqData); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	id, err := model.ProjectTask{
+		ProjectID: reqData.ProjectID,
+		CommitID:  reqData.CommitID,
+		Date:      reqData.Date,
+		Creator:   gp.UserInfo.Name,
+		CreatorID: gp.UserInfo.ID,
+	}.AddRow()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+
+	}
+	type RespData struct {
+		ID int64 `json:"id"`
+	}
+	return &core.Response{Data: RespData{ID: id}}
+}
+
+// AddTask to project task
+func (project Project) EditTask(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type ReqData struct {
+		ID       int64  `json:"id" validate:"gt=0"`
+		CommitID string `json:"commitId" validate:"len=40"`
+		Date     string `json:"date" validate:"required"`
+	}
+	var reqData ReqData
+	if err := verify(gp.Body, &reqData); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	err := model.ProjectTask{
+		ID:       reqData.ID,
+		CommitID: reqData.CommitID,
+		Date:     reqData.Date,
+		Editor:   gp.UserInfo.Name,
+		EditorID: gp.UserInfo.ID,
+	}.EditRow()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+
+	}
+
+	return &core.Response{}
+}
+
+// RemoveTask to project task
+func (project Project) RemoveTask(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type ReqData struct {
+		ID       int64  `json:"id" validate:"gt=0"`
+	}
+	var reqData ReqData
+	if err := verify(gp.Body, &reqData); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	err := model.ProjectTask{ID: reqData.ID}.RemoveRow()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
 	return &core.Response{}
 }
 
