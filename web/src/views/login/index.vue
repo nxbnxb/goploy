@@ -1,8 +1,8 @@
 <template>
   <div class="login-container">
     <el-row class="login-mark" type="flex" align="middle">
-      <img src="@/assets/images/logo.png" width="70" height="70">
-      <el-row>
+      <img src="@/assets/images/logo.png" width="60" height="60">
+      <el-row style="margin-left: 10px;margin-top:5px;">
         <el-row class="main-mark">代码部署平台</el-row>
         <el-row class="sub-mark">Goploy</el-row>
       </el-row>
