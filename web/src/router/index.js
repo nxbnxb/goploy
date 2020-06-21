@@ -113,24 +113,36 @@ export const asyncRoutes = [
         component: () => import('@/views/project/setting'),
         meta: {
           title: '项目设置',
-          icon: 'setting',
+          icon: 'project',
           roles: ['admin', 'manager', 'group-manager']
         }
-      },
+      }
+    ]
+  },
+  {
+    path: '/server',
+    name: '服务器管理',
+    component: Layout,
+    meta: {
+      title: '服务器管理',
+      icon: 'server',
+      roles: ['admin', 'manager', 'group-manager']
+    },
+    children: [
       {
-        path: 'group',
-        name: '分组设置',
-        component: () => import('@/views/project/group'),
+        path: 'setting',
+        name: '服务器设置',
+        component: () => import('@/views/server/setting'),
         meta: {
-          title: '分组设置',
-          icon: 'list',
+          title: '服务器设置',
+          icon: 'setting',
           roles: ['admin', 'manager', 'group-manager']
         }
       },
       {
         path: 'template',
         name: '模板设置',
-        component: () => import('@/views/project/template'),
+        component: () => import('@/views/server/template'),
         meta: {
           title: '模板设置',
           icon: 'template',
@@ -138,12 +150,34 @@ export const asyncRoutes = [
         }
       },
       {
-        path: 'server',
-        name: '服务器设置',
-        component: () => import('@/views/project/server'),
+        path: 'crontab',
+        name: 'Crontab',
+        component: () => import('@/views/server/crontab'),
         meta: {
-          title: '服务器设置',
-          icon: 'server',
+          title: 'Crontab管理',
+          icon: 'crontab',
+          roles: ['admin', 'manager', 'group-manager']
+        }
+      }
+    ]
+  },
+  {
+    path: '/group',
+    name: '分组管理',
+    component: Layout,
+    meta: {
+      title: '分组管理',
+      icon: 'group',
+      roles: ['admin', 'manager', 'group-manager']
+    },
+    children: [
+      {
+        path: 'setting',
+        name: '分组设置',
+        component: () => import('@/views/group/setting'),
+        meta: {
+          title: '分组设置',
+          icon: 'group',
           roles: ['admin', 'manager', 'group-manager']
         }
       }

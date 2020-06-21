@@ -762,7 +762,7 @@ export default {
       this.pagination.page = 1
       this.getProjectList()
     },
-    // 分页事件
+
     handlePageChange(val) {
       this.pagination.page = val
       this.getProjectList()

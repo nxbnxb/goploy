@@ -1,6 +1,6 @@
 module.exports = {
 
-  title: '代码发布',
+  title: 'Goploy',
 
   /**
    * @type {boolean} true | false

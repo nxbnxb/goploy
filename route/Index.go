@@ -82,6 +82,12 @@ func Init() *router.Router {
 	rt.Add("/package/getOption", router.GET, controller.Package{}.GetOption)
 	rt.Add("/package/upload", router.POST, controller.Package{}.Upload)
 
+	// crontab route
+	rt.Add("/crontab/getList", router.GET, controller.Crontab{}.GetList)
+	rt.Add("/crontab/add", router.POST, controller.Crontab{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/crontab/edit", router.POST, controller.Crontab{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/crontab/remove", router.DELETE, controller.Crontab{}.Remove).Roles([]string{core.RoleAdmin, core.RoleManager})
+
 	// projectGroup route
 	rt.Add("/group/getList", router.GET, controller.Group{}.GetList).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 	rt.Add("/group/getOption", router.GET, controller.Group{}.GetOption)
