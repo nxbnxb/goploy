@@ -67,7 +67,7 @@ func (pt PublishTrace) GetListByToken() (PublishTraces, error) {
 	if err != nil {
 		return nil, err
 	}
-	var publishTraces PublishTraces
+	publishTraces := PublishTraces{}
 	for rows.Next() {
 		var publishTrace PublishTrace
 
@@ -115,7 +115,7 @@ func (pt PublishTrace) GetPreview(pagination Pagination) (PublishTraces, Paginat
 	if err != nil {
 		return nil, pagination, err
 	}
-	var publishTraces PublishTraces
+	publishTraces := PublishTraces{}
 	for rows.Next() {
 		var publishTrace PublishTrace
 

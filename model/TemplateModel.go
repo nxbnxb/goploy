@@ -72,7 +72,7 @@ func (tpl Template) GetList(pagination Pagination) (Templates, Pagination, error
 	if err != nil {
 		return nil, pagination, err
 	}
-	var templates Templates
+	templates := Templates{}
 	for rows.Next() {
 		var template Template
 
@@ -104,7 +104,7 @@ func (tpl Template) GetAll() (Templates, error) {
 	if err != nil {
 		return nil, err
 	}
-	var templates Templates
+	templates := Templates{}
 	for rows.Next() {
 		var template Template
 

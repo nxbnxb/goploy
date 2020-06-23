@@ -38,7 +38,7 @@ func (s Server) GetList(pagination Pagination) (Servers, Pagination, error) {
 	if err != nil {
 		return nil, pagination, err
 	}
-	var servers Servers
+	servers := Servers{}
 	for rows.Next() {
 		var server Server
 
@@ -79,7 +79,7 @@ func (s Server) GetListInGroupIDs(groupIDs []string, pagination Pagination) (Ser
 	if err != nil {
 		return nil, pagination, err
 	}
-	var servers Servers
+	servers := Servers{}
 	for rows.Next() {
 		var server Server
 
@@ -111,7 +111,7 @@ func (s Server) GetAll() (Servers, error) {
 	if err != nil {
 		return nil, err
 	}
-	var servers Servers
+	servers := Servers{}
 	for rows.Next() {
 		var server Server
 		if err := rows.Scan(&server.ID, &server.Name, &server.IP, &server.Owner, &server.GroupID, &server.Description, &server.InsertTime, &server.UpdateTime); err != nil {

@@ -50,11 +50,47 @@
         <el-button :disabled="formProps.disabled" type="primary" @click="submit">确 定</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="crontab导入" :visible.sync="importVisible">
+      <el-row>
+        <el-row type="flex">
+          <el-select v-model="importProps.serverId" placeholder="选择服务器" style="width:100%;margin-right:5px;">
+            <el-option
+              v-for="(item, index) in serverOption"
+              :key="index"
+              :label="item.label"
+              :value="item.id"
+            />
+          </el-select>
+          <el-button :disabled="importProps.disabled" :icon="importProps.disabled ? 'el-icon-loading' : 'el-icon-search'" type="primary" @click="getRemoteServerList">读取</el-button>
+        </el-row>
+        <el-table
+          border
+          stripe
+          highlight-current-row
+          empty-text="请先选择服务器读取"
+          :data="serverTableData"
+          style="width: 100%; margin-top: 10px;"
+          @selection-change="handleCrontabSelectionChange"
+        >
+          <el-table-column
+            type="selection"
+            width="40"
+          />
+          <el-table-column prop="command" label="命令" min-width="140" show-overflow-tooltip />
+          <el-table-column prop="description" label="描述" min-width="240" show-overflow-tooltip />
+        </el-table>
+      </el-row>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button :disabled="importProps.disabled" type="primary" @click="importCrontab">确 定</el-button>
+      </div>
+    </el-dialog>
   </el-row>
 </template>
 <script>
 import cronstrue from 'cronstrue/i18n'
-import { getList, add, edit, remove } from '@/api/crontab'
+import { getList, getRemoteServerList, add, edit, remove, importCrontab } from '@/api/crontab'
+import { getOption as getServerOption } from '@/api/server'
 
 export default {
   data() {
@@ -68,7 +104,10 @@ export default {
     }
     return {
       dialogVisible: false,
+      importVisible: false,
+      selectedItems: [],
       tableData: [],
+      serverOption: [],
       pagination: {
         page: 1,
         rows: 16,
@@ -92,11 +131,18 @@ export default {
         script: [
           { required: true, message: '请输入脚本', trigger: 'blur' }
         ]
-      }
+      },
+      importProps: {
+        serverId: '',
+        disabled: false,
+        loading: false
+      },
+      serverTableData: []
     }
   },
   created() {
     this.getList()
+    this.getServerOption()
   },
 
   methods: {
@@ -115,12 +161,44 @@ export default {
       })
     },
 
+    getServerOption() {
+      getServerOption().then((response) => {
+        this.serverOption = response.data.serverList || []
+        this.serverOption.map(element => {
+          element.label = element.name + (element.description.length > 0 ? '(' + element.description + ')' : '')
+          return element
+        })
+      })
+    },
+
+    getRemoteServerList() {
+      if (this.importProps.serverId <= 0) {
+        this.$message.warning('请先选择服务器')
+        return
+      }
+      this.importProps.disabled = true
+      getRemoteServerList(this.importProps.serverId).then(response => {
+        this.serverTableData = response.data.crontabList.map(command => {
+          const element = {}
+          const commandSplit = command.split(' ')
+          element.command = command
+          element.date = commandSplit.slice(0, 5).join(' ')
+          element.dateCN = cronstrue.toString(element.date, { locale: 'zh_CN' })
+          element.script = commandSplit.slice(5).join(' ')
+          element.description = element.dateCN + ', 运行: ' + element.script
+          return element
+        })
+      }).finally(() => { this.importProps.disabled = false })
+    },
+
     handleAdd() {
       this.formData.id = 0
       this.dialogVisible = true
     },
 
-    handleImport() {},
+    handleImport() {
+      this.importVisible = true
+    },
 
     handleEdit(data) {
       this.formData.id = data.id
@@ -150,6 +228,20 @@ export default {
           message: '已取消删除'
         })
       })
+    },
+
+    handleCrontabSelectionChange(items) {
+      this.selectedItems = items
+    },
+
+    importCrontab() {
+      if (this.selectedItems.length === 0) {
+        this.$message.warning('请先选择需要导入的条目')
+        return
+      }
+      importCrontab({ commands: this.selectedItems.map(element => element.command) }).then(response => {
+        this.$message.success('导入成功')
+      }).finally(() => { this.importVisible = false })
     },
 
     onDateChange() {

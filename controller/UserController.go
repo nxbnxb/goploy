@@ -35,7 +35,7 @@ func (user User) Login(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	if err := userData.Vaildate(reqData.Password); err != nil {
+	if err := userData.Validate(reqData.Password); err != nil {
 		return &core.Response{Code: core.Deny, Message: err.Error()}
 	}
 
@@ -255,7 +255,7 @@ func (user User) ChangePassword(w http.ResponseWriter, gp *core.Goploy) *core.Re
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	if err := userData.Vaildate(reqData.OldPassword); err != nil {
+	if err := userData.Validate(reqData.OldPassword); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 

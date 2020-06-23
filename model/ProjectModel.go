@@ -165,7 +165,7 @@ func (p Project) GetListByName(pagination Pagination) (Projects, Pagination, err
 	if err != nil {
 		return nil, pagination, err
 	}
-	var projects Projects
+	projects := Projects{}
 	for rows.Next() {
 		var project Project
 
@@ -228,7 +228,7 @@ func (p Project) GetListByNameInGroupIDs(groupIDs []string, pagination Paginatio
 	if err != nil {
 		return nil, pagination, err
 	}
-	var projects Projects
+	projects := Projects{}
 	for rows.Next() {
 		var project Project
 
@@ -307,7 +307,7 @@ func (p Project) GetUserProjectList(userID int64, userRole string, groupIDStr st
 	if err != nil {
 		return nil, err
 	}
-	var projects Projects
+	projects := Projects{}
 	for rows.Next() {
 		var project Project
 
@@ -344,7 +344,7 @@ func (p Project) GetAll() (Projects, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projects Projects
+	projects := Projects{}
 	for rows.Next() {
 		var project Project
 
@@ -378,7 +378,7 @@ func (p Project) GetAllByName() (Projects, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projects Projects
+	projects := Projects{}
 	for rows.Next() {
 		var project Project
 

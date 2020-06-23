@@ -44,7 +44,7 @@ func (pt ProjectTask) GetListByProjectID(pagination Pagination) (ProjectTasks, P
 	if err != nil {
 		return nil, pagination, err
 	}
-	var projectTasks ProjectTasks
+	projectTasks := ProjectTasks{}
 	for rows.Next() {
 		var projectTask ProjectTask
 
@@ -92,7 +92,7 @@ func (pt ProjectTask) GetNotRunListLTDate(date string) (ProjectTasks, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectTasks ProjectTasks
+	projectTasks := ProjectTasks{}
 	for rows.Next() {
 		var projectTask ProjectTask
 		if err := rows.Scan(

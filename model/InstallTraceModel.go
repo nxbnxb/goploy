@@ -60,7 +60,7 @@ func (it InstallTrace) GetListByToken() (InstallTraces, error) {
 	if err != nil {
 		return nil, err
 	}
-	var installTraces InstallTraces
+	installTraces := InstallTraces{}
 	for rows.Next() {
 		var installTrace InstallTrace
 
@@ -98,7 +98,7 @@ func (it InstallTrace) GetPreviewByProjectID() (InstallTraces, error) {
 	if err != nil {
 		return nil, err
 	}
-	var installTraces InstallTraces
+	installTraces := InstallTraces{}
 	for rows.Next() {
 		var installTrace InstallTrace
 
@@ -135,7 +135,7 @@ func (it InstallTrace) GetListGroupByToken() (InstallTraces, error) {
 	if err != nil {
 		return nil, err
 	}
-	var installTraces InstallTraces
+	installTraces := InstallTraces{}
 	for rows.Next() {
 		var installTrace InstallTrace
 

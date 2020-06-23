@@ -34,7 +34,7 @@ func (ps ProjectServer) GetBindServerListByProjectID() (ProjectServers, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectServers ProjectServers
+	projectServers := ProjectServers{}
 	for rows.Next() {
 		var projectServer ProjectServer
 

@@ -76,7 +76,7 @@ func (u Users) GetList(pagination Pagination) (Users, Pagination, error) {
 	if err != nil {
 		return nil, pagination, err
 	}
-	var users Users
+	users := Users{}
 	for rows.Next() {
 		var user User
 
@@ -110,7 +110,7 @@ func (u User) GetAll() (Users, error) {
 	if err != nil {
 		return nil, err
 	}
-	var users Users
+	users := Users{}
 	for rows.Next() {
 		var user User
 
@@ -135,7 +135,7 @@ func (u User) GetAllByRole() (Users, error) {
 	if err != nil {
 		return nil, err
 	}
-	var users Users
+	users := Users{}
 	for rows.Next() {
 		var user User
 
@@ -160,7 +160,7 @@ func (u User) GetCanBindProjectUser() (Users, error) {
 	if err != nil {
 		return nil, err
 	}
-	var users Users
+	users := Users{}
 	for rows.Next() {
 		var user User
 
@@ -268,7 +268,7 @@ func (u User) UpdateLastLoginTime() error {
 }
 
 // Validate if user exists
-func (u User) Vaildate(inputPassword string) error {
+func (u User) Validate(inputPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(inputPassword))
 	if err != nil {
 		return errors.New("密码错误")

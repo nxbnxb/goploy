@@ -31,7 +31,7 @@ func (pu ProjectUser) GetBindUserListByProjectID() (ProjectUsers, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectUsers ProjectUsers
+	projectUsers := ProjectUsers{}
 	for rows.Next() {
 		var projectUser ProjectUser
 
@@ -55,7 +55,7 @@ func (pu ProjectUser) GetBindProjectListByUserID() (ProjectUsers, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectUsers ProjectUsers
+	projectUsers := ProjectUsers{}
 	for rows.Next() {
 		var projectUser ProjectUser
 
@@ -78,7 +78,7 @@ func (pu ProjectUser) GetListByUserID() (ProjectUsers, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectUsers ProjectUsers
+	projectUsers := ProjectUsers{}
 	for rows.Next() {
 		var projectUser ProjectUser
 
@@ -112,7 +112,7 @@ func (pu ProjectUser) GetListLeftJoinProjectByUserID() (Projects, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projects Projects
+	projects := Projects{}
 	for rows.Next() {
 		var project Project
 

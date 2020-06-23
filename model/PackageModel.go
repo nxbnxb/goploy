@@ -33,7 +33,7 @@ func (p Package) GetList(pagination Pagination) (Packages, Pagination, error) {
 	if err != nil {
 		return nil, pagination, err
 	}
-	var packages Packages
+	packages := Packages{}
 	for rows.Next() {
 		var pkg Package
 
@@ -65,7 +65,7 @@ func (p Package) GetAllInIDStr(IDStr string) (Packages, error) {
 	if err != nil {
 		return nil, err
 	}
-	var packages Packages
+	packages := Packages{}
 	for rows.Next() {
 		var pkg Package
 
@@ -88,7 +88,7 @@ func (p Package) GetAll() (Packages, error) {
 	if err != nil {
 		return nil, err
 	}
-	var packages Packages
+	packages := Packages{}
 	for rows.Next() {
 		var pkg Package
 

@@ -95,7 +95,7 @@ func (g Group) GetList(pagination Pagination) (Groups, Pagination, error) {
 		return nil, pagination, err
 	}
 
-	var groups Groups
+	groups := Groups{}
 	for rows.Next() {
 		var group Group
 
@@ -133,7 +133,7 @@ func (g Group) GetListInGroupIDs(groupIDs []string, pagination Pagination) (Grou
 		return nil, pagination, err
 	}
 
-	var groups Groups
+	groups := Groups{}
 	for rows.Next() {
 		var group Group
 
@@ -168,7 +168,7 @@ func (g Group) GetAllInGroupIDs(groupIDs []string) (Groups, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectGroups Groups
+	projectGroups := Groups{}
 	for rows.Next() {
 		var projectGroup Group
 
@@ -191,7 +191,7 @@ func (g Group) GetAll() (Groups, error) {
 	if err != nil {
 		return nil, err
 	}
-	var projectGroups Groups
+	projectGroups := Groups{}
 	for rows.Next() {
 		var projectGroup Group
 

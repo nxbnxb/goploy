@@ -627,13 +627,12 @@ export default {
       if (this.taskFormData.projectId !== data.id) {
         this.taskFormData.projectId = data.id
         this.taskFormProps.projectName = data.name
+        this.taskFormData.commitId = ''
+        this.taskFormData.date = ''
         const id = data.id
         getCommitList(id).then(response => {
           this.taskFormProps.commitOptions = response.data.commitList || []
         })
-      } else {
-        this.taskFormData.commitId = ''
-        this.taskFormData.date = ''
       }
     },
 

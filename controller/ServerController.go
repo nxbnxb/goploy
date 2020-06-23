@@ -173,8 +173,6 @@ func (server Server) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response
 	}.EditRow()
 
 	if err != nil {
-		response := &core.Response{Code: core.Deny, Message: err.Error()}
-		response.JSON(w)
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	return &core.Response{}
