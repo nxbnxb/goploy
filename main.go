@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"github.com/joho/godotenv"
 	"goploy/core"
@@ -10,10 +11,11 @@ import (
 	"goploy/task"
 	"goploy/utils"
 	"goploy/ws"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -47,22 +49,22 @@ func install() {
 	println("请输入mysql的用户:")
 	mysqlUser, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	mysqlUser = utils.ClearNewline(mysqlUser)
 	println("请输入mysql的密码:")
 	mysqlPassword, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	mysqlPassword = utils.ClearNewline(mysqlPassword)
+	if len(mysqlPassword) != 0 {
+		mysqlPassword = ":" + mysqlPassword
+	}
 	println("请输入mysql的主机(默认127.0.0.1，不带端口):")
 	mysqlHost, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	mysqlHost = utils.ClearNewline(mysqlHost)
 	if len(mysqlHost) == 0 {
@@ -71,8 +73,7 @@ func install() {
 	println("请输入mysql的端口(默认3306):")
 	mysqlPort, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	mysqlPort = utils.ClearNewline(mysqlPort)
 	if len(mysqlPort) == 0 {
@@ -81,8 +82,7 @@ func install() {
 	println("请输入日志目录的绝对路径(默认/tmp/):")
 	logPath, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	logPath = utils.ClearNewline(logPath)
 	if len(logPath) == 0 {
@@ -91,8 +91,7 @@ func install() {
 	println("请输入sshkey的绝对路径(默认/root/.ssh/id_rsa):")
 	sshFile, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	sshFile = utils.ClearNewline(sshFile)
 	if len(sshFile) == 0 {
@@ -101,31 +100,45 @@ func install() {
 	println("请输入监听端口(默认80，打开网页时的端口):")
 	port, err := inputReader.ReadString('\n')
 	if err != nil {
-		println("There were errors reading, exiting program.")
-		return
+		panic("There were errors reading, exiting program.")
 	}
 	port = utils.ClearNewline(port)
 	if len(port) == 0 {
 		port = "80"
 	}
 	println("开始安装数据库...")
-	mysqlOption := []string{"-h"+mysqlHost, "-P"+mysqlPort, "-u"+mysqlUser}
-	if len(mysqlPassword) != 0 {
-		mysqlOption = append(mysqlOption, "-p"+mysqlPassword)
-	}
-	mysqlOption = append(mysqlOption,"-e","source ./goploy.sql")
-	cmd := exec.Command("mysql", mysqlOption...)
-	err = cmd.Run()
+
+	db, err := sql.Open("mysql", fmt.Sprintf(
+		"%s%s@tcp(%s:%s)/?charset=utf8mb4,utf8\n",
+		mysqlUser,
+		mysqlPassword,
+		mysqlHost,
+		mysqlPort))
 	if err != nil {
-		println(err.Error())
-		println("检查是否有安装mysql客户端")
-		return
+		panic(err)
 	}
+	statement, err := ioutil.ReadFile("./goploy.sql")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, s := range strings.Split(string(statement), ";") {
+		trimmed := strings.TrimSpace(s)
+		if len(trimmed) == 0 {
+			continue
+		}
+		_, err := db.Exec(trimmed)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	db.Close()
 	println("安装数据库完成")
 	envContent := ""
 	envContent += "DB_TYPE=mysql\n"
 	envContent += fmt.Sprintf(
-		"DB_CONN=%s:%s@tcp(%s:%s)/goploy?charset=utf8\n",
+		"DB_CONN=%s%s@tcp(%s:%s)/goploy?charset=utf8mb4,utf8\n",
 		mysqlUser,
 		mysqlPassword,
 		mysqlHost,

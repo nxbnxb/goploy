@@ -1,33 +1,6 @@
-/*
- Navicat Premium Data Transfer
-
- Source Server         : localhost
- Source Server Type    : MySQL
- Source Server Version : 50553
- Source Host           : localhost:3306
- Source Schema         : goploy
-
- Target Server Type    : MySQL
- Target Server Version : 50553
- File Encoding         : 65001
-
- Date: 21/07/2019 10:15:53
-*/
-
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
 CREATE DATABASE IF NOT EXISTS `goploy`;
-USE `goploy`;
 
--- ----------------------------
--- Records of git_trace
--- ----------------------------
-
--- ----------------------------
--- Table structure for log
--- ----------------------------
-DROP TABLE IF EXISTS `log`;
-CREATE TABLE `log`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`log`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `type` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 COMMENT '日志类型',
   `ip` int(10) UNSIGNED NOT NULL DEFAULT 0,
@@ -38,11 +11,7 @@ CREATE TABLE `log`  (
   INDEX `create_time`(`create_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Table structure for project
--- ----------------------------
-DROP TABLE IF EXISTS `project`;
-CREATE TABLE `project`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`project`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `group_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '项目名称',
@@ -69,15 +38,7 @@ CREATE TABLE `project`  (
    PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of project
--- ----------------------------
-
--- ----------------------------
--- Table structure for project_server
--- ----------------------------
-DROP TABLE IF EXISTS `project_server`;
-CREATE TABLE `project_server`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`project_server`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `project_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `server_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
@@ -87,15 +48,7 @@ CREATE TABLE `project_server`  (
   UNIQUE INDEX `project_id`(`project_id`, `server_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of project_server
--- ----------------------------
-
--- ----------------------------
--- Table structure for project_user
--- ----------------------------
-DROP TABLE IF EXISTS `project_user`;
-CREATE TABLE `project_user`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`project_user`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `project_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `user_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
@@ -105,14 +58,7 @@ CREATE TABLE `project_user`  (
   UNIQUE INDEX `project_id`(`project_id`, `user_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of project_user
--- ----------------------------
-
--- ----------------------------
--- Table structure for project_task
--- ----------------------------
-CREATE TABLE `project_task` (
+CREATE TABLE IF NOT EXISTS `goploy`.`project_task` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `project_id` int(10) unsigned NOT NULL DEFAULT '0',
   `commit_id` char(40) NOT NULL DEFAULT '',
@@ -129,15 +75,7 @@ CREATE TABLE `project_task` (
   KEY `project_update` (`project_id`,`update_time`) USING BTREE COMMENT 'project_id,update_time'
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of project_task
--- ----------------------------
-
--- ----------------------------
--- Table structure for group
--- ----------------------------
-DROP TABLE IF EXISTS `group`;
-CREATE TABLE `group`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`group`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -145,15 +83,7 @@ CREATE TABLE `group`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of group
--- ----------------------------
-
--- ----------------------------
--- Table structure for publish_trace
--- ----------------------------
-DROP TABLE IF EXISTS `publish_trace`;
-CREATE TABLE `publish_trace` (
+CREATE TABLE IF NOT EXISTS `goploy`.`publish_trace` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `token` char(36) CHARACTER SET utf8mb4 NOT NULL DEFAULT '',
   `project_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -171,15 +101,7 @@ CREATE TABLE `publish_trace` (
   KEY `project_id` (`project_id`) USING BTREE COMMENT 'project_id'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------
--- Records of publish_trace
--- ----------------------------
-
--- ----------------------------
--- Table structure for server
--- ----------------------------
-DROP TABLE IF EXISTS `server`;
-CREATE TABLE `server`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`server`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `group_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
@@ -194,15 +116,21 @@ CREATE TABLE `server`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of server
--- ----------------------------
+CREATE TABLE IF NOT EXISTS `goploy`.`crontab` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `command` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `command_md5` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'command md5 for search',
+  `creator_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `creator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `editor_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `editor` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_command_md5` (`command_md5`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Table structure for template
--- ----------------------------
-DROP TABLE IF EXISTS `template`;
-CREATE TABLE `template` (
+CREATE TABLE IF NOT EXISTS `goploy`.`template` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `package_id_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -213,15 +141,7 @@ CREATE TABLE `template` (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Records of template
--- ----------------------------
-
--- ----------------------------
--- Table structure for package
--- ----------------------------
-DROP TABLE IF EXISTS `package`;
-CREATE TABLE `package` (
+CREATE TABLE IF NOT EXISTS `goploy`.`package` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `size` int(10) unsigned NOT NULL DEFAULT '0',
@@ -230,15 +150,7 @@ CREATE TABLE `package` (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Records of package
--- ----------------------------
-
--- ----------------------------
--- Table structure for template
--- ----------------------------
-DROP TABLE IF EXISTS `install_trace`;
-CREATE TABLE `install_trace` (
+CREATE TABLE IF NOT EXISTS `goploy`.`install_trace` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `token` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `server_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -255,15 +167,7 @@ CREATE TABLE `install_trace` (
   KEY `project_id` (`server_id`) USING BTREE COMMENT 'project_id'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Records of install_trace
--- ----------------------------
-
--- ----------------------------
--- Table structure for user
--- ----------------------------
-DROP TABLE IF EXISTS `user`;
-CREATE TABLE `user`  (
+CREATE TABLE IF NOT EXISTS `goploy`.`user`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `account` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `password` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
@@ -278,9 +182,4 @@ CREATE TABLE `user`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
--- ----------------------------
--- Records of user
--- ----------------------------
-INSERT INTO `user` (`account`, `password`, `name`, `mobile`, `role`, `manage_group_str`, `state`) VALUES ('admin', '$2a$10$89ZJ2xeJj35GOw11Qiucr.phaEZP4.kBX6aKTs7oWFp1xcGBBgijm', '超管', '18023496666', 'admin' ,'all', 1);
-
-SET FOREIGN_KEY_CHECKS = 1;
+INSERT INTO `goploy`.`user` (`account`, `password`, `name`, `mobile`, `role`, `manage_group_str`, `state`) VALUES ('admin', '$2a$10$89ZJ2xeJj35GOw11Qiucr.phaEZP4.kBX6aKTs7oWFp1xcGBBgijm', '超管', '18023496666', 'admin' ,'all', 1);
