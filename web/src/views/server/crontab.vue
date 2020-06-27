@@ -1,17 +1,23 @@
 <template>
   <el-row class="app-container">
-    <el-row class="app-bar" type="flex" justify="end">
-      <el-button type="primary" icon="el-icon-download" @click="handleImport">导入</el-button>
-      <el-button type="primary" icon="el-icon-plus" @click="handleAdd">添加</el-button>
+    <el-row class="app-bar" type="flex" justify="space-between">
+      <el-row>
+        <el-input v-model="crontabCommand" style="width:200px" placeholder="请输入命令关键词" />
+        <el-button type="primary" icon="el-icon-search" @click="searchList">搜索</el-button>
+      </el-row>
+      <el-row>
+        <el-button type="primary" icon="el-icon-download" @click="handleImport">导入</el-button>
+        <el-button type="primary" icon="el-icon-plus" @click="handleAdd">添加</el-button>
+      </el-row>
     </el-row>
     <el-table
+      :max-height="tableHeight"
       border
       stripe
       highlight-current-row
       :data="tableData"
       style="width: 100%"
     >
-      <el-table-column prop="id" label="ID" min-width="50" />
       <el-table-column prop="command" label="命令" min-width="140" show-overflow-tooltip />
       <el-table-column prop="description" label="描述" min-width="240" show-overflow-tooltip />
       <el-table-column prop="creator" label="创建人" min-width="50" />
@@ -88,11 +94,13 @@
   </el-row>
 </template>
 <script>
+import tableHeight from '@/mixin/tableHeight'
 import cronstrue from 'cronstrue/i18n'
-import { getList, getRemoteServerList, add, edit, remove, importCrontab } from '@/api/crontab'
+import { getList, getTotal, getRemoteServerList, add, edit, remove, importCrontab } from '@/api/crontab'
 import { getOption as getServerOption } from '@/api/server'
 
 export default {
+  mixins: [tableHeight],
   data() {
     const validateDate = (rule, value, callback) => {
       try {
@@ -103,6 +111,7 @@ export default {
       }
     }
     return {
+      crontabCommand: '',
       dialogVisible: false,
       importVisible: false,
       selectedItems: [],
@@ -142,14 +151,14 @@ export default {
   },
   created() {
     this.getList()
+    this.getTotal()
     this.getServerOption()
   },
 
   methods: {
     getList() {
-      getList(this.pagination).then((response) => {
-        const crontabList = response.data.crontabList || []
-        this.tableData = crontabList.map(element => {
+      getList(this.pagination, this.crontabCommand).then((response) => {
+        this.tableData = response.data.list.map(element => {
           const commandSplit = element.command.split(' ')
           element.date = commandSplit.slice(0, 5).join(' ')
           element.dateCN = cronstrue.toString(element.date, { locale: 'zh_CN' })
@@ -157,13 +166,18 @@ export default {
           element.description = element.dateCN + ', 运行: ' + element.script
           return element
         })
-        this.pagination = response.data.pagination
+      })
+    },
+
+    getTotal() {
+      getTotal(this.crontabCommand).then((response) => {
+        this.pagination.total = response.data.total
       })
     },
 
     getServerOption() {
       getServerOption().then((response) => {
-        this.serverOption = response.data.serverList || []
+        this.serverOption = response.data.list
         this.serverOption.map(element => {
           element.label = element.name + (element.description.length > 0 ? '(' + element.description + ')' : '')
           return element
@@ -178,7 +192,7 @@ export default {
       }
       this.importProps.disabled = true
       getRemoteServerList(this.importProps.serverId).then(response => {
-        this.serverTableData = response.data.crontabList.map(command => {
+        this.serverTableData = response.data.list.map(command => {
           const element = {}
           const commandSplit = command.split(' ')
           element.command = command
@@ -189,6 +203,12 @@ export default {
           return element
         })
       }).finally(() => { this.importProps.disabled = false })
+    },
+
+    searchList() {
+      this.pagination.page = 1
+      this.getList()
+      this.getTotal()
     },
 
     handleAdd() {
@@ -215,18 +235,12 @@ export default {
         type: 'warning'
       }).then(() => {
         remove(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
+          this.$message.success('删除成功')
           this.getList()
+          this.getTotal()
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -240,6 +254,8 @@ export default {
         return
       }
       importCrontab({ commands: this.selectedItems.map(element => element.command) }).then(response => {
+        this.getList()
+        this.getTotal()
         this.$message.success('导入成功')
       }).finally(() => { this.importVisible = false })
     },
@@ -250,7 +266,7 @@ export default {
 
     handlePageChange(val) {
       this.pagination.page = val
-      this.getProjectList()
+      this.getList()
     },
 
     submit() {
@@ -272,11 +288,8 @@ export default {
       this.formProps.disabled = true
       add(this.formData).then((response) => {
         this.getList()
-        this.$message({
-          message: '添加成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.getTotal()
+        this.$message.success('添加成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })
@@ -286,11 +299,7 @@ export default {
       this.formProps.disabled = true
       edit(this.formData).then((response) => {
         this.getList()
-        this.$message({
-          message: '编辑成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.$message.success('编辑成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })

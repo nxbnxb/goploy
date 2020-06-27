@@ -22,8 +22,7 @@ type Project Controller
 // GetList project list
 func (project Project) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Project    model.Projects   `json:"projectList"`
-		Pagination model.Pagination `json:"pagination"`
+		Projects model.Projects `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -32,15 +31,35 @@ func (project Project) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Res
 	projectName := gp.URLQuery.Get("projectName")
 	var projectList model.Projects
 	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		projectList, pagination, err = model.Project{Name: projectName}.GetListByName(pagination)
+		projectList, err = model.Project{Name: projectName}.GetList(pagination, nil)
 	} else {
-		projectList, pagination, err = model.Project{Name: projectName}.GetListByNameInGroupIDs(strings.Split(gp.UserInfo.ManageGroupStr, ","), pagination)
+		projectList, err = model.Project{Name: projectName}.GetList(pagination, strings.Split(gp.UserInfo.ManageGroupStr, ","))
 	}
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Project: projectList, Pagination: pagination}}
+	return &core.Response{Data: RespData{Projects: projectList}}
+}
+
+// GetList project list
+func (project Project) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	var total int64
+	var err error
+	projectName := gp.URLQuery.Get("projectName")
+	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
+		total, err = model.Project{Name: projectName}.GetTotal(nil)
+	} else {
+		total, err = model.Project{Name: projectName}.GetTotal(strings.Split(gp.UserInfo.ManageGroupStr, ","))
+	}
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetList project list
@@ -73,7 +92,7 @@ func (project Project) GetRemoteBranchList(w http.ResponseWriter, gp *core.Goplo
 // GetOption Project list
 func (project Project) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Projects model.Projects `json:"projectList"`
+		Projects model.Projects `json:"list"`
 	}
 
 	projectList, err := model.Project{}.GetAll()
@@ -541,7 +560,7 @@ func (project Project) EditTask(w http.ResponseWriter, gp *core.Goploy) *core.Re
 // RemoveTask to project task
 func (project Project) RemoveTask(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ID       int64  `json:"id" validate:"gt=0"`
+		ID int64 `json:"id" validate:"gt=0"`
 	}
 	var reqData ReqData
 	if err := verify(gp.Body, &reqData); err != nil {

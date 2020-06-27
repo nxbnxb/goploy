@@ -20,7 +20,7 @@ type Deploy Controller
 // GetList deploy list
 func (deploy Deploy) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Project model.Projects `json:"projectList"`
+		Project model.Projects `json:"list"`
 	}
 	groupIDStr := gp.URLQuery.Get("groupId")
 	groupID, err := strconv.ParseInt(groupIDStr, 10, 64)

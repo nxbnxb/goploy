@@ -275,18 +275,11 @@ export default {
         type: 'warning'
       }).then(() => {
         remove(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
+          this.$message.success('删除成功')
           this.getTemplateList()
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -309,11 +302,7 @@ export default {
       this.formProps.disabled = true
       addTemplate(this.formData).then((response) => {
         this.getTemplateList()
-        this.$message({
-          message: '添加成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.$message.success('添加成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })
@@ -323,11 +312,7 @@ export default {
       this.formProps.disabled = true
       editTemplate(this.formData).then((response) => {
         this.getTemplateList()
-        this.$message({
-          message: '修改成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.$message('修改成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })

@@ -66,7 +66,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown
-              v-if="[$global.Admin, $global.Manager, $global.GroupManager].indexOf($store.getters.role) !== -1"
+              v-if="hasGroupManagerPermission()"
               split-button
               trigger="click"
               :disabled="scope.row.deployState === 1"
@@ -85,6 +85,7 @@
       </el-table-column>
     </el-table>
     <el-pagination
+      hide-on-single-page
       :total="pagination.total"
       :page-size="pagination.rows"
       :current-page.sync="pagination.page"
@@ -458,20 +459,19 @@ export default {
 
     getDeployGroupOption() {
       getDeployGroupOption().then((response) => {
-        this.groupOption = response.data.groupList || []
+        this.groupOption = response.data.list
       })
     },
 
     getUserOption() {
       getUserOption().then((response) => {
-        this.userOption = response.data.userList || []
+        this.userOption = response.data.list
       })
     },
 
     getList() {
       getList(this.groupId, this.projectName).then((response) => {
-        const projectList = response.data.projectList || []
-        this.tableData = projectList.map(element => {
+        this.tableData = response.data.list.map(element => {
           element.progressPercentage = 0
           element.tagType = 'info'
           element.tagText = '未构建'
@@ -535,10 +535,7 @@ export default {
           this.tableData[projectIndex].deployState = 1
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消构建'
-        })
+        this.$message.info('已取消构建')
       })
     },
 
@@ -706,10 +703,7 @@ export default {
           this.taskTableData[projectTaskIndex]['updateTime'] = parseTime(new Date())
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消操作'
-        })
+        this.$message.info('已取消操作')
       })
     },
 
@@ -726,10 +720,7 @@ export default {
           this.dialogVisible = false
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消重新构建'
-        })
+        this.$message.info('已取消重新构建')
       })
     },
 

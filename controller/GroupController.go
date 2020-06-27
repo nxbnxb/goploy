@@ -13,10 +13,9 @@ import (
 type Group Controller
 
 // GetList Group list
-func (group Group) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (group Group) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Groups     model.Groups     `json:"groupList"`
-		Pagination model.Pagination `json:"pagination"`
+		Groups     model.Groups     `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -24,21 +23,39 @@ func (group Group) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 	}
 	var groupList model.Groups
 	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		groupList, pagination, err = model.Group{}.GetList(pagination)
+		groupList, err = model.Group{}.GetList(pagination, nil)
 	} else {
-		groupList, pagination, err = model.Group{}.GetListInGroupIDs(strings.Split(gp.UserInfo.ManageGroupStr, ","), pagination)
+		groupList, err = model.Group{}.GetList(pagination, strings.Split(gp.UserInfo.ManageGroupStr, ","))
 	}
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
-
 	}
-	return &core.Response{Data: RespData{Groups: groupList, Pagination: pagination}}
+	return &core.Response{Data: RespData{Groups: groupList}}
+}
+
+// GetList server list
+func (group Group) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	var total int64
+	var err error
+	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
+		total, err = model.Group{}.GetTotal(nil)
+	} else {
+		total, err = model.Group{}.GetTotal(strings.Split(gp.UserInfo.ManageGroupStr, ","))
+	}
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetOption Group list
-func (group Group) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (group Group) GetOption(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Groups model.Groups `json:"groupList"`
+		Groups model.Groups `json:"list"`
 	}
 	var (
 		groupList model.Groups
@@ -59,7 +76,7 @@ func (group Group) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Respo
 // GetDeployOption Group list
 func (group Group) GetDeployOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Groups model.Groups `json:"groupList"`
+		Groups model.Groups `json:"list"`
 	}
 	var (
 		groupList model.Groups

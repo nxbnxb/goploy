@@ -3,11 +3,22 @@ import request from '@/utils/request'
 /**
  * @return {Promise}
  */
-export function getList(pagination) {
+export function getList({ page, rows }, command) {
   return request({
     url: '/crontab/getList',
     method: 'get',
-    params: { ...pagination }
+    params: { page, rows, command }
+  })
+}
+
+/**
+ * @return {Promise}
+ */
+export function getTotal(command) {
+  return request({
+    url: '/crontab/getTotal',
+    method: 'get',
+    params: { command }
   })
 }
 

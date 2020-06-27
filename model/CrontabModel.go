@@ -23,40 +23,55 @@ type Crontab struct {
 type Crontabs []Crontab
 
 // GetList crontab row
-func (c Crontab) GetList(pagination Pagination) (Crontabs, Pagination, error) {
-	rows, err := sq.
+func (c Crontab) GetList(pagination Pagination) (Crontabs, error) {
+	builder := sq.
 		Select("id, command, creator, creator_id, editor, editor_id, insert_time, update_time").
-		From(crontabTable).
+		From(crontabTable)
+	if len(c.Command) > 0 {
+		builder = builder.Where(sq.Like{"command": "%" + c.Command + "%"})
+	}
+	rows, err := builder.
 		Limit(pagination.Rows).
 		Offset((pagination.Page - 1) * pagination.Rows).
 		OrderBy("id DESC").
 		RunWith(DB).
 		Query()
 	if err != nil {
-		return nil, pagination, err
+		return nil, err
 	}
 	crontabs := Crontabs{}
 	for rows.Next() {
 		var crontab Crontab
 		if err := rows.Scan(&crontab.ID, &crontab.Command, &crontab.Creator, &crontab.CreatorID, &crontab.Editor, &crontab.EditorID, &crontab.InsertTime, &crontab.UpdateTime); err != nil {
-			return nil, pagination, err
+			return nil, err
 		}
 		crontabs = append(crontabs, crontab)
 	}
-	err = sq.
+	return crontabs, nil
+}
+
+// GetList crontab total
+func (c Crontab) GetTotal() (int64, error) {
+	var total int64
+	builder := sq.
 		Select("COUNT(*) AS count").
-		From(crontabTable).
+		From(crontabTable)
+	if len(c.Command) > 0 {
+		builder = builder.Where(sq.Like{"command": "%" + c.Command + "%"})
+	}
+
+	err := builder.
 		RunWith(DB).
 		QueryRow().
-		Scan(&pagination.Total)
+		Scan(&total)
 	if err != nil {
-		return nil, pagination, err
+		return 0, err
 	}
-	return crontabs, pagination, nil
+	return total, nil
 }
 
 // GetList crontab row
-func (c Crontab) GetListInCommandMD5(commandMD5s []string) (Crontabs, error) {
+func (c Crontab) GetAllInCommandMD5(commandMD5s []string) (Crontabs, error) {
 	rows, err := sq.
 		Select("id, command, command_md5").
 		From(crontabTable).

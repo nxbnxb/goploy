@@ -17,28 +17,39 @@ import (
 type Crontab Controller
 
 // GetList crontab list
-func (crontab Crontab) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (crontab Crontab) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Crontabs   model.Crontabs   `json:"crontabList"`
-		Pagination model.Pagination `json:"pagination"`
+		Crontabs   model.Crontabs   `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-
-	crontabList, pagination, err := model.Crontab{}.GetList(pagination)
+	crontabs, err := model.Crontab{Command: gp.URLQuery.Get("command")}.GetList(pagination)
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Crontabs: crontabList, Pagination: pagination}}
+	return &core.Response{Data: RespData{Crontabs: crontabs}}
+}
+
+// GetTotal crontab total
+func (crontab Crontab) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	total, err := model.Crontab{Command: gp.URLQuery.Get("command")}.GetTotal()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetList crontab list
 func (crontab Crontab) GetRemoteServerList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Crontabs []string `json:"crontabList"`
+		Crontabs []string `json:"list"`
 	}
 
 	serverID, err := strconv.ParseInt(gp.URLQuery.Get("serverId"), 10, 64)
@@ -71,6 +82,8 @@ func (crontab Crontab) GetRemoteServerList(w http.ResponseWriter, gp *core.Goplo
 
 	var crontabs []string
 	for _, crontab := range crontabList {
+		// windows \r\n
+		crontab = strings.TrimRight(crontab, "\r")
 		if len(crontab) == 0 {
 			continue
 		}
@@ -173,7 +186,7 @@ func (crontab Crontab) Import(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 		commandMD5s = append(commandMD5s, commandMD5)
 	}
 
-	crontabList, err := model.Crontab{}.GetListInCommandMD5(commandMD5s)
+	crontabList, err := model.Crontab{}.GetAllInCommandMD5(commandMD5s)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}

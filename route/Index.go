@@ -25,6 +25,7 @@ func Init() *router.Router {
 	rt.Add("/user/login", router.POST, controller.User{}.Login)
 	rt.Add("/user/info", router.GET, controller.User{}.Info)
 	rt.Add("/user/getList", router.GET, controller.User{}.GetList)
+	rt.Add("/user/getTotal", router.GET, controller.User{}.GetTotal)
 	rt.Add("/user/getOption", router.GET, controller.User{}.GetOption)
 	rt.Add("/user/getCanBindProjectUser", router.GET, controller.User{}.GetCanBindProjectUser)
 	rt.Add("/user/add", router.POST, controller.User{}.Add).Role(core.RoleAdmin)
@@ -34,6 +35,7 @@ func Init() *router.Router {
 
 	// project route
 	rt.Add("/project/getList", router.GET, controller.Project{}.GetList)
+	rt.Add("/project/getTotal", router.GET, controller.Project{}.GetTotal)
 	rt.Add("/project/getRemoteBranchList", router.GET, controller.Project{}.GetRemoteBranchList)
 	rt.Add("/project/getOption", router.GET, controller.Project{}.GetOption).Roles([]string{core.RoleAdmin})
 	rt.Add("/project/getBindServerList", router.GET, controller.Project{}.GetBindServerList)
@@ -61,6 +63,7 @@ func Init() *router.Router {
 
 	// server route
 	rt.Add("/server/getList", router.GET, controller.Server{}.GetList)
+	rt.Add("/server/getTotal", router.GET, controller.Server{}.GetTotal)
 	rt.Add("/server/getInstallPreview", router.GET, controller.Server{}.GetInstallPreview)
 	rt.Add("/server/getInstallList", router.GET, controller.Server{}.GetInstallList)
 	rt.Add("/server/getOption", router.GET, controller.Server{}.GetOption)
@@ -84,14 +87,16 @@ func Init() *router.Router {
 
 	// crontab route
 	rt.Add("/crontab/getList", router.GET, controller.Crontab{}.GetList)
+	rt.Add("/crontab/getTotal", router.GET, controller.Crontab{}.GetTotal)
 	rt.Add("/crontab/getRemoteServerList", router.GET, controller.Crontab{}.GetRemoteServerList)
 	rt.Add("/crontab/add", router.POST, controller.Crontab{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/crontab/edit", router.POST, controller.Crontab{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/crontab/import", router.POST, controller.Crontab{}.Import).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/crontab/remove", router.DELETE, controller.Crontab{}.Remove).Roles([]string{core.RoleAdmin, core.RoleManager})
 
-	// projectGroup route
+	// group route
 	rt.Add("/group/getList", router.GET, controller.Group{}.GetList).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/group/getTotal", router.GET, controller.Group{}.GetTotal).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 	rt.Add("/group/getOption", router.GET, controller.Group{}.GetOption)
 	rt.Add("/group/getDeployOption", router.GET, controller.Group{}.GetDeployOption)
 	rt.Add("/group/add", router.POST, controller.Group{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager})

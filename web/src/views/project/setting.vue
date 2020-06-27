@@ -328,7 +328,7 @@ import tableHeight from '@/mixin/tableHeight'
 import { getCanBindProjectUser } from '@/api/user'
 import { getOption as getServerOption } from '@/api/server'
 import { getOption as getGroupOption } from '@/api/group'
-import { getList, getBindServerList, getBindUserList, getRemoteBranchList, add, edit, remove, addServer, addUser, removeProjectServer, removeProjectUser } from '@/api/project'
+import { getList, getTotal, getBindServerList, getBindUserList, getRemoteBranchList, add, edit, remove, addServer, addUser, removeProjectServer, removeProjectUser } from '@/api/project'
 // require component
 import { codemirror } from 'vue-codemirror'
 import 'codemirror/mode/shell/shell.js'
@@ -475,7 +475,9 @@ export default {
   },
   created() {
     this.storeFormData()
-    this.get()
+    this.getOptions()
+    this.getList()
+    this.getTotal()
   },
   methods: {
     handleAdd() {
@@ -502,18 +504,12 @@ export default {
         type: 'warning'
       }).then(() => {
         remove(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
-          this.getProjectList()
+          this.$message.success('删除成功')
+          this.getList()
+          this.getTotal()
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -587,12 +583,9 @@ export default {
       this.formProps.disabled = true
       add(this.formData).then((response) => {
         this.dialogVisible = false
-        this.$message({
-          message: '添加成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
-        this.getProjectList()
+        this.$message.success('添加成功')
+        this.getList()
+        this.getTotal()
       }).finally(() => {
         this.formProps.disabled = false
       })
@@ -602,12 +595,8 @@ export default {
       this.formProps.disabled = true
       edit(this.formData).then((response) => {
         this.dialogVisible = false
-        this.$message({
-          message: '修改成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
-        this.getProjectList()
+        this.$message.success('修改成功')
+        this.getList()
       }).finally(() => {
         this.formProps.disabled = false
       })
@@ -619,11 +608,7 @@ export default {
           this.addServerFormProps.disabled = true
           addServer(this.addServerFormData).then((response) => {
             this.dialogAddServerVisible = false
-            this.$message({
-              message: '添加成功',
-              type: 'success',
-              duration: 5 * 1000
-            })
+            this.$message.success('添加成功')
             this.getBindServerList(this.addServerFormData.projectId)
           }).finally(() => {
             this.addServerFormProps.disabled = false
@@ -640,11 +625,7 @@ export default {
           this.addUserFormProps.disabled = true
           addUser(this.addUserFormData).then((response) => {
             this.dialogAddUserVisible = false
-            this.$message({
-              message: '添加成功',
-              type: 'success',
-              duration: 5 * 1000
-            })
+            this.$message.success('添加成功')
             this.getBindUserList(this.addUserFormData.projectId)
           }).finally(() => {
             this.addUserFormProps.disabled = false
@@ -662,18 +643,11 @@ export default {
         type: 'warning'
       }).then(() => {
         removeProjectServer(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
+          this.$message.success('删除成功')
           this.getBindServerList(data.projectId)
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -684,44 +658,40 @@ export default {
         type: 'warning'
       }).then(() => {
         removeProjectUser(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
+          this.$message.success('删除成功')
           this.getBindUserList(data.projectId)
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
-    get() {
-      this.getProjectList()
+    getOptions() {
       getServerOption().then((response) => {
-        this.serverOption = response.data.serverList || []
+        this.serverOption = response.data.list
         this.serverOption.map(element => {
           element.label = element.name + (element.description.length > 0 ? '(' + element.description + ')' : '')
           return element
         })
       })
       getCanBindProjectUser().then((response) => {
-        this.userOption = response.data.userList || []
+        this.userOption = response.data.list
       })
       getGroupOption().then((response) => {
-        this.groupOption = response.data.groupList || []
+        this.groupOption = response.data.list
       })
     },
 
-    getProjectList() {
+    getList() {
       getList(this.pagination, this.projectName).then((response) => {
-        const projectList = response.data.projectList || []
-        this.tableData = projectList
-        this.pagination = response.data.pagination
+        this.tableData = response.data.list
       }).catch(() => {
+      })
+    },
+
+    getTotal() {
+      getTotal(this.projectName).then((response) => {
+        this.pagination.total = response.data.total
       })
     },
 
@@ -740,19 +710,13 @@ export default {
     getRemoteBranchList() {
       // 已获取过分支
       if (this.formProps.branch.length > 0) {
-        this.$message({
-          type: 'info',
-          message: '无需重复获取'
-        })
+        this.$message.info('无需重复获取')
         return
       }
       this.formProps.lsBranchLoading = true
       getRemoteBranchList(this.formData.url).then((response) => {
         this.formProps.branch = response.data.branch
-        this.$message({
-          type: 'success',
-          message: '获取成功'
-        })
+        this.$message.success('获取成功')
       }).finally(() => {
         this.formProps.lsBranchLoading = false
       })
@@ -760,12 +724,13 @@ export default {
 
     searchProjectList() {
       this.pagination.page = 1
-      this.getProjectList()
+      this.getList()
+      this.getTotal()
     },
 
     handlePageChange(val) {
       this.pagination.page = val
-      this.getProjectList()
+      this.getList()
     },
 
     findGroupName(groupId) {

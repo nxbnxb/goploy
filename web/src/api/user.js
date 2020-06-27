@@ -19,13 +19,22 @@ export function getInfo() {
  * @param  {object} pagination
  * @return {Promise}
  */
-export function getList(pagination) {
+export function getList({ page, rows }) {
   return request({
     url: '/user/getList',
     method: 'get',
-    params: {
-      ...pagination
-    }
+    params: { page, rows }
+  })
+}
+
+/**
+ * @return {Promise}
+ */
+export function getTotal() {
+  return request({
+    url: '/user/getTotal',
+    method: 'get',
+    params: { }
   })
 }
 

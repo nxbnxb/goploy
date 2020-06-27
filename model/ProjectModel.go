@@ -150,20 +150,28 @@ func (p Project) DeployFail() error {
 }
 
 // GetList project row
-func (p Project) GetListByName(pagination Pagination) (Projects, Pagination, error) {
-	rows, err := sq.
+func (p Project) GetList(pagination Pagination, groupIDs []string) (Projects, error) {
+	builder := sq.
 		Select("id, group_id, name, url, path, symlink_path, environment, branch, after_pull_script_mode, after_pull_script, after_deploy_script_mode, after_deploy_script, rsync_option, auto_deploy, notify_type, notify_target, insert_time, update_time").
 		From(projectTable).
-		Where(sq.Eq{"state": Enable}).
-		Where(sq.Like{"name": "%" + p.Name + "%"}).
-		Limit(pagination.Rows).
+		Where(sq.Eq{"state": Enable})
+
+	if len(p.Name) > 0 {
+		builder = builder.Where(sq.Like{"name": "%" + p.Name + "%"})
+	}
+
+	if len(groupIDs) > 0 {
+		builder = builder.Where(sq.Eq{"group_id": groupIDs})
+	}
+
+	rows, err := builder.Limit(pagination.Rows).
 		Offset((pagination.Page - 1) * pagination.Rows).
 		OrderBy("id DESC").
 		RunWith(DB).
 		Query()
 
 	if err != nil {
-		return nil, pagination, err
+		return nil, err
 	}
 	projects := Projects{}
 	for rows.Next() {
@@ -189,26 +197,38 @@ func (p Project) GetListByName(pagination Pagination) (Projects, Pagination, err
 			&project.InsertTime,
 			&project.UpdateTime,
 		); err != nil {
-			return nil, pagination, err
+			return nil, err
 		}
 		projects = append(projects, project)
 	}
-	err = sq.
+
+	return projects, nil
+}
+
+// GetList project total
+func (p Project) GetTotal(groupIDs []string) (int64, error) {
+	var total int64
+	builder := sq.
 		Select("COUNT(*) AS count").
 		From(projectTable).
-		Where(sq.Like{"name": "%" + p.Name + "%"}).
-		Where(sq.Eq{"state": Enable}).
-		RunWith(DB).
-		QueryRow().
-		Scan(&pagination.Total)
-	if err != nil {
-		return nil, pagination, err
+		Where(sq.Eq{"state": Enable})
+	if len(p.Name) > 0 {
+		builder = builder.Where(sq.Like{"name": "%" + p.Name + "%"})
 	}
-	return projects, pagination, nil
+	if len(groupIDs) > 0 {
+		builder = builder.Where(sq.Eq{"group_id": groupIDs})
+	}
+	err := builder.RunWith(DB).
+		QueryRow().
+		Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	return total, nil
 }
 
 // GetListByManagerGroupStr project row
-func (p Project) GetListByNameInGroupIDs(groupIDs []string, pagination Pagination) (Projects, Pagination, error) {
+func (p Project) GetListInGroupIDs(groupIDs []string, pagination Pagination) (Projects, Pagination, error) {
 	builder := sq.
 		Select("id, group_id, name, url, path, symlink_path, environment, branch, after_pull_script_mode, after_pull_script, after_deploy_script_mode, after_deploy_script, rsync_option, auto_deploy, notify_type, notify_target, insert_time, update_time").
 		From(projectTable).

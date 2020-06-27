@@ -25,78 +25,55 @@ type Server struct {
 type Servers []Server
 
 // GetList server row
-func (s Server) GetList(pagination Pagination) (Servers, Pagination, error) {
-	rows, err := sq.
+func (s Server) GetList(pagination Pagination, groupIDs []string) (Servers, error) {
+	builder := sq.
 		Select("id, name, ip, port, owner, group_id, description, insert_time, update_time").
 		From(serverTable).
-		Where(sq.Eq{"state": Enable}).
+		Where(sq.Eq{"state": Enable})
+
+	if len(groupIDs) > 0 {
+		builder = builder.Where(sq.Eq{"group_id": groupIDs})
+	}
+
+	rows, err := builder.
 		Limit(pagination.Rows).
 		Offset((pagination.Page - 1) * pagination.Rows).
 		OrderBy("id DESC").
 		RunWith(DB).
 		Query()
 	if err != nil {
-		return nil, pagination, err
+		return nil, err
 	}
 	servers := Servers{}
 	for rows.Next() {
 		var server Server
 
 		if err := rows.Scan(&server.ID, &server.Name, &server.IP, &server.Port, &server.Owner, &server.GroupID, &server.Description, &server.InsertTime, &server.UpdateTime); err != nil {
-			return nil, pagination, err
+			return nil, err
 		}
 		servers = append(servers, server)
 	}
-	err = sq.
-		Select("COUNT(*) AS count").
-		From(serverTable).
-		Where(sq.Eq{"state": Enable}).
-		RunWith(DB).
-		QueryRow().
-		Scan(&pagination.Total)
-	if err != nil {
-		return nil, pagination, err
-	}
-	return servers, pagination, nil
+
+	return servers, nil
 }
 
-// GetListByManagerGroupStr server row
-func (s Server) GetListInGroupIDs(groupIDs []string, pagination Pagination) (Servers, Pagination, error) {
+// GetList server total
+func (s Server) GetTotal(groupIDs []string) (int64, error) {
+	var total int64
 	builder := sq.
-		Select("id, name, ip, port, owner, group_id, description, insert_time, update_time").
-		From(serverTable).
-		Where(sq.Eq{"state": Enable}).
-		Where(sq.Eq{"group_id": groupIDs}).
-		Limit(pagination.Rows).
-		Offset((pagination.Page - 1) * pagination.Rows).
-		OrderBy("id DESC")
-	pageBuilder := sq.
 		Select("COUNT(*) AS count").
-		Where(sq.Eq{"state": Enable}).
-		Where(sq.Eq{"group_id": groupIDs}).
-		From(serverTable)
-	rows, err := builder.RunWith(DB).Query()
-	if err != nil {
-		return nil, pagination, err
+		From(serverTable).
+		Where(sq.Eq{"state": Enable})
+	if len(groupIDs) > 0 {
+		builder = builder.Where(sq.Eq{"group_id": groupIDs})
 	}
-	servers := Servers{}
-	for rows.Next() {
-		var server Server
-
-		if err := rows.Scan(&server.ID, &server.Name, &server.IP, &server.Port, &server.Owner, &server.GroupID, &server.Description, &server.InsertTime, &server.UpdateTime); err != nil {
-			return nil, pagination, err
-		}
-		servers = append(servers, server)
-	}
-	err = pageBuilder.
-		RunWith(DB).
+	err := builder.RunWith(DB).
 		QueryRow().
-		Scan(&pagination.Total)
+		Scan(&total)
 	if err != nil {
-		return nil, pagination, err
+		return 0, err
 	}
-
-	return servers, pagination, nil
+	return total, nil
 }
 
 // GetAll server row

@@ -45,7 +45,7 @@
   </el-row>
 </template>
 <script>
-import { getList, add, edit, remove } from '@/api/group'
+import { getList, getTotal, add, edit, remove } from '@/api/group'
 
 export default {
   data() {
@@ -74,13 +74,18 @@ export default {
   created() {
     this.storeFormData()
     this.getList()
+    this.getTotal()
   },
   methods: {
     getList() {
       getList(this.pagination).then((response) => {
-        const groupList = response.data.groupList || []
-        this.tableData = groupList
-        this.pagination = response.data.pagination
+        this.tableData = response.data.list
+      })
+    },
+
+    getTotal() {
+      getTotal().then((response) => {
+        this.pagination.total = response.data.total
       })
     },
 
@@ -107,18 +112,12 @@ export default {
         type: 'warning'
       }).then(() => {
         remove(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
+          this.$message.success('删除成功')
           this.getList()
+          this.getTotal()
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -140,11 +139,8 @@ export default {
       this.formProps.disabled = true
       add(this.formData).then((response) => {
         this.getList()
-        this.$message({
-          message: '添加成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.getTotal()
+        this.$message.success('添加成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })
@@ -154,11 +150,7 @@ export default {
       this.formProps.disabled = true
       edit(this.formData).then((response) => {
         this.getList()
-        this.$message({
-          message: '修改成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.$message.success('修改成功',)
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })

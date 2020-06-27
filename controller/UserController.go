@@ -76,42 +76,54 @@ func (user User) Info(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 // GetList user list
 func (user User) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		User       model.Users      `json:"userList"`
-		Pagination model.Pagination `json:"pagination"`
+		Users       model.Users      `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	users, pagination, err := model.Users{}.GetList(pagination)
+	users, err := model.User{}.GetList(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{User: users, Pagination: pagination}}
+	return &core.Response{Data: RespData{Users: users}}
+}
+
+// GetTotal user total
+func (user User) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	total, err := model.User{}.GetTotal()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetOption user list
 func (user User) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		User model.Users `json:"userList"`
+		Users model.Users `json:"list"`
 	}
 	users, err := model.User{}.GetAll()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{User: users}}
+	return &core.Response{Data: RespData{Users: users}}
 }
 
 // GetCanBindProjectUser user list
 func (user User) GetCanBindProjectUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		User model.Users `json:"userList"`
+		Users model.Users `json:"list"`
 	}
 	users, err := model.User{}.GetCanBindProjectUser()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{User: users}}
+	return &core.Response{Data: RespData{Users: users}}
 }
 
 // Add one user

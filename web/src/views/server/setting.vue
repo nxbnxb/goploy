@@ -125,7 +125,7 @@
   </el-row>
 </template>
 <script>
-import { getList, getInstallPreview, getInstallList, add, edit, check, remove, install } from '@/api/server'
+import { getList, getTotal, getInstallPreview, getInstallList, add, edit, check, remove, install } from '@/api/server'
 import { getOption as getGroupOption } from '@/api/group'
 import { getOption as getTemplateOption } from '@/api/template'
 // require component
@@ -264,6 +264,7 @@ export default {
   created() {
     this.storeFormData()
     this.getList()
+    this.getTotal()
     this.getGroupOption()
     this.getTemplateOption()
   },
@@ -271,9 +272,13 @@ export default {
   methods: {
     getList() {
       getList(this.pagination).then((response) => {
-        const serverList = response.data.serverList || []
-        this.tableData = serverList
-        this.pagination = response.data.pagination
+        this.tableData = response.data.list
+      })
+    },
+
+    getTotal() {
+      getTotal().then((response) => {
+        this.pagination.total = response.data.total
       })
     },
 
@@ -285,7 +290,7 @@ export default {
 
     getGroupOption() {
       getGroupOption().then((response) => {
-        this.groupOption = response.data.groupList || []
+        this.groupOption = response.data.list
       })
     },
 
@@ -312,18 +317,12 @@ export default {
         type: 'warning'
       }).then(() => {
         remove(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
+          this.$message.success('删除成功')
           this.getList()
+          this.getTotal()
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -353,11 +352,7 @@ export default {
           this.formProps.loading = true
           this.formProps.disabled = true
           check(this.formData).then(response => {
-            this.$message({
-              message: '连接成功',
-              type: 'success',
-              duration: 5 * 1000
-            })
+            this.$message.success('连接成功')
           }).finally(_ => {
             this.formProps.loading = false
             this.formProps.disabled = false
@@ -386,11 +381,8 @@ export default {
       this.formProps.disabled = true
       add(this.formData).then((response) => {
         this.getList()
-        this.$message({
-          message: '添加成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.getTotal()
+        this.$message.success('添加成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })
@@ -400,11 +392,7 @@ export default {
       this.formProps.disabled = true
       edit(this.formData).then((response) => {
         this.getList()
-        this.$message({
-          message: '编辑成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
+        this.$message.success('编辑成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
       })

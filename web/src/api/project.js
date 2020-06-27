@@ -14,6 +14,17 @@ export function getList({ page, rows }, projectName) {
 /**
  * @return {Promise}
  */
+export function getTotal(projectName) {
+  return request({
+    url: '/project/getTotal',
+    method: 'get',
+    params: { projectName }
+  })
+}
+
+/**
+ * @return {Promise}
+ */
 export function getRemoteBranchList(url) {
   return request({
     url: '/project/getRemoteBranchList',

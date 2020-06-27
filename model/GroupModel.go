@@ -82,17 +82,21 @@ func (g Group) Remove() error {
 }
 
 // GetList Group row
-func (g Group) GetList(pagination Pagination) (Groups, Pagination, error) {
-	rows, err := sq.
+func (g Group) GetList(pagination Pagination, groupIDs []string) (Groups, error) {
+	builder := sq.
 		Select("id, name, insert_time, update_time").
-		From(groupTable).
+		From(groupTable)
+	if len(groupIDs) > 0 {
+		builder = builder.Where(sq.Eq{"id": groupIDs})
+	}
+	rows, err := builder.
 		OrderBy("id DESC").
 		Limit(pagination.Rows).
 		Offset((pagination.Page - 1) * pagination.Rows).
 		RunWith(DB).
 		Query()
 	if err != nil {
-		return nil, pagination, err
+		return nil, err
 	}
 
 	groups := Groups{}
@@ -100,60 +104,30 @@ func (g Group) GetList(pagination Pagination) (Groups, Pagination, error) {
 		var group Group
 
 		if err := rows.Scan(&group.ID, &group.Name, &group.InsertTime, &group.UpdateTime); err != nil {
-			return nil, pagination, err
+			return nil, err
 		}
 		groups = append(groups, group)
 	}
 
-	err = sq.
-		Select("COUNT(*) AS count").
-		From(groupTable).
-		RunWith(DB).
-		QueryRow().
-		Scan(&pagination.Total)
-	if err != nil {
-		return nil, pagination, err
-	}
-
-	return groups, pagination, nil
+	return groups, nil
 }
 
-// GetList Group row
-func (g Group) GetListInGroupIDs(groupIDs []string, pagination Pagination) (Groups, Pagination, error) {
-	rows, err := sq.
-		Select("id, name, insert_time, update_time").
-		From(groupTable).
-		Where(sq.Eq{"id": groupIDs}).
-		OrderBy("id DESC").
-		Limit(pagination.Rows).
-		Offset((pagination.Page - 1) * pagination.Rows).
-		RunWith(DB).
-		Query()
-	if err != nil {
-		return nil, pagination, err
-	}
-
-	groups := Groups{}
-	for rows.Next() {
-		var group Group
-
-		if err := rows.Scan(&group.ID, &group.Name, &group.InsertTime, &group.UpdateTime); err != nil {
-			return nil, pagination, err
-		}
-		groups = append(groups, group)
-	}
-
-	err = sq.
+// GetList group total
+func (g Group) GetTotal(groupIDs []string) (int64, error) {
+	var total int64
+	builder := sq.
 		Select("COUNT(*) AS count").
-		From(groupTable).
-		RunWith(DB).
-		QueryRow().
-		Scan(&pagination.Total)
-	if err != nil {
-		return nil, pagination, err
+		From(groupTable)
+	if len(groupIDs) > 0 {
+		builder = builder.Where(sq.Eq{"id": groupIDs})
 	}
-
-	return groups, pagination, nil
+	err := builder.RunWith(DB).
+		QueryRow().
+		Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	return total, nil
 }
 
 // GetAll Group row

@@ -22,10 +22,9 @@ import (
 type Server Controller
 
 // GetList server list
-func (server Server) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (server Server) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Server     model.Servers    `json:"serverList"`
-		Pagination model.Pagination `json:"pagination"`
+		Servers model.Servers `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -34,19 +33,38 @@ func (server Server) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Respo
 
 	var serverList model.Servers
 	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		serverList, pagination, err = model.Server{}.GetList(pagination)
+		serverList, err = model.Server{}.GetList(pagination, nil)
 	} else {
-		serverList, pagination, err = model.Server{}.GetListInGroupIDs(strings.Split(gp.UserInfo.ManageGroupStr, ","), pagination)
+		serverList, err = model.Server{}.GetList(pagination, strings.Split(gp.UserInfo.ManageGroupStr, ","))
 	}
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Server: serverList, Pagination: pagination}}
+	return &core.Response{Data: RespData{Servers: serverList}}
+}
+
+// GetList server list
+func (server Server) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	var total int64
+	var err error
+	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
+		total, err = model.Server{}.GetTotal(nil)
+	} else {
+		total, err = model.Server{}.GetTotal(strings.Split(gp.UserInfo.ManageGroupStr, ","))
+	}
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetInstallPreview server install token list
-func (server Server) GetInstallPreview(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (server Server) GetInstallPreview(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		InstallTraceList model.InstallTraces `json:"installTraceList"`
 	}
@@ -82,14 +100,14 @@ func (server Server) GetInstallList(w http.ResponseWriter, gp *core.Goploy) *cor
 // GetOption server list
 func (server Server) GetOption(w http.ResponseWriter, _ *core.Goploy) *core.Response {
 	type RespData struct {
-		Server model.Servers `json:"serverList"`
+		Servers model.Servers `json:"list"`
 	}
 
 	serverList, err := model.Server{}.GetAll()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Server: serverList}}
+	return &core.Response{Data: RespData{Servers: serverList}}
 }
 
 // Check one server

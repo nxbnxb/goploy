@@ -63,7 +63,7 @@ func (u User) GetDataByAccount() (User, error) {
 }
 
 // GetList get many user row
-func (u Users) GetList(pagination Pagination) (Users, Pagination, error) {
+func (u User) GetList(pagination Pagination) (Users, error) {
 	rows, err := sq.
 		Select("id, account, name, mobile, role, manage_group_str, insert_time, update_time").
 		From(userTable).
@@ -74,28 +74,35 @@ func (u Users) GetList(pagination Pagination) (Users, Pagination, error) {
 		RunWith(DB).
 		Query()
 	if err != nil {
-		return nil, pagination, err
+		return nil, err
 	}
 	users := Users{}
 	for rows.Next() {
 		var user User
 
 		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.Role, &user.ManageGroupStr, &user.InsertTime, &user.UpdateTime); err != nil {
-			return users, pagination, err
+			return users, err
 		}
 		users = append(users, user)
 	}
-	err = sq.
+
+	return users, nil
+}
+
+// GetList crontab total
+func (u User) GetTotal() (int64, error) {
+	var total int64
+	err := sq.
 		Select("COUNT(*) AS count").
 		From(userTable).
 		Where(sq.Eq{"state": Enable}).
 		RunWith(DB).
 		QueryRow().
-		Scan(&pagination.Total)
+		Scan(&total)
 	if err != nil {
-		return nil, pagination, err
+		return 0, err
 	}
-	return users, pagination, nil
+	return total, nil
 }
 
 // GetAll user row

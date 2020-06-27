@@ -12,7 +12,7 @@ type Role Controller
 // GetOption role list
 func (role Role) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		RoleList []string `json:"roleList"`
+		RoleList []string `json:"list"`
 	}
 	return &core.Response{Data: RespData{RoleList: []string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager, core.RoleMember}}}
 }

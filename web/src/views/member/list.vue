@@ -104,7 +104,7 @@
 </template>
 <script>
 import { validUsername, validPassword } from '@/utils/validate'
-import { getList, add, edit, remove } from '@/api/user'
+import { getList, getTotal, add, edit, remove } from '@/api/user'
 import { getOption as getRoleOption } from '@/api/role'
 import { getOption as getGroupOption } from '@/api/group'
 import { getOption as getProjectOption, getBindProjectList } from '@/api/project'
@@ -180,26 +180,31 @@ export default {
     this.storeFormData()
     this.getRoleOption()
     this.getGroupOption()
-    this.getUserList()
+    this.getList()
+    this.getTotal()
   },
   methods: {
-    getUserList() {
+    getList() {
       getList(this.pagination).then((response) => {
-        const userList = response.data.userList || []
-        this.tableData = userList
-        this.pagination = response.data.pagination
+        this.tableData = response.data.list
+      })
+    },
+
+    getTotal() {
+      getTotal(this.crontabCommand).then((response) => {
+        this.pagination.total = response.data.total
       })
     },
 
     getRoleOption() {
       getRoleOption().then((response) => {
-        this.roleOption = response.data.roleList || []
+        this.roleOption = response.data.list
       })
     },
 
     getGroupOption() {
       getGroupOption().then((response) => {
-        this.groupOption = response.data.groupList || []
+        this.groupOption = response.data.list
         getProjectOption().then(response => {
           this.projectOption = this.groupOption.map(element => {
             return {
@@ -213,7 +218,7 @@ export default {
             label: '默认',
             children: []
           })
-          response.data.projectList.forEach(element => {
+          response.data.list.forEach(element => {
             const groupIndex = this.projectOption.findIndex(group => group.value === element.groupId)
             this.projectOption[groupIndex].children.push({
               value: element.id,
@@ -227,7 +232,7 @@ export default {
     // 分页事件
     handleCurrentChange(val) {
       this.pagination.page = val
-      this.getUserList()
+      this.getList()
     },
 
     handleAdd() {
@@ -242,12 +247,12 @@ export default {
         return parseInt(element)
       })
       getBindProjectList(data.id).then((response) => {
-        this.formData.projectIds = response.data.projectUserMap ? response.data.projectUserMap.map(element => {
+        this.formData.projectIds = response.data.projectUserMap.map(element => {
           return element.projectId
-        }) : []
-        this.formProps.projectIds = response.data.projectUserMap ? response.data.projectUserMap.map(element => {
+        })
+        this.formProps.projectIds = response.data.projectUserMap.map(element => {
           return [element.groupId, element.projectId]
-        }) : []
+        })
       })
       this.dialogVisible = true
     },
@@ -259,18 +264,12 @@ export default {
         type: 'warning'
       }).then(() => {
         remove(data.id).then((response) => {
-          this.$message({
-            message: '删除成功',
-            type: 'success',
-            duration: 5 * 1000
-          })
-          this.getUserList()
+          this.$message.success('删除成功')
+          this.getList()
+          this.getTotal()
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        })
+        this.$message.info('已取消删除')
       })
     },
 
@@ -312,12 +311,9 @@ export default {
     add() {
       this.formProps.disabled = true
       add(this.formData).then((response) => {
-        this.$message({
-          message: '添加成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
-        this.getUserList()
+        this.$message.success('添加成功')
+        this.getList()
+        this.getTotal()
         this.dialogVisible = false
       }).finally(() => {
         this.formProps.disabled = false
@@ -327,12 +323,8 @@ export default {
     edit() {
       this.formProps.disabled = true
       edit(this.formData).then((response) => {
-        this.$message({
-          message: '修改成功',
-          type: 'success',
-          duration: 5 * 1000
-        })
-        this.getUserList()
+        this.$message.success('修改成功')
+        this.getList()
         this.dialogVisible = false
       }).finally(() => {
         this.formProps.disabled = false
