@@ -14,6 +14,17 @@ export function getList({ page, rows }) {
 /**
  * @return {Promise}
  */
+export function getTotal() {
+  return request({
+    url: '/template/getTotal',
+    method: 'get',
+    params: { }
+  })
+}
+
+/**
+ * @return {Promise}
+ */
 export function getOption() {
   return request({
     url: '/template/getOption',

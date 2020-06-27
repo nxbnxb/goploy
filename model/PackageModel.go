@@ -21,7 +21,7 @@ type Package struct {
 type Packages []Package
 
 // GetList package row
-func (p Package) GetList(pagination Pagination) (Packages, Pagination, error) {
+func (p Package) GetList(pagination Pagination) (Packages, error) {
 	rows, err := sq.
 		Select("id, name, size, insert_time, update_time").
 		From(packageTable).
@@ -31,27 +31,33 @@ func (p Package) GetList(pagination Pagination) (Packages, Pagination, error) {
 		RunWith(DB).
 		Query()
 	if err != nil {
-		return nil, pagination, err
+		return nil, err
 	}
 	packages := Packages{}
 	for rows.Next() {
 		var pkg Package
 
 		if err := rows.Scan(&pkg.ID, &pkg.Name, &pkg.Size, &pkg.InsertTime, &pkg.UpdateTime); err != nil {
-			return nil, pagination, err
+			return nil, err
 		}
 		packages = append(packages, pkg)
 	}
-	err = sq.
+	return packages, nil
+}
+
+// GetList package total
+func (p Package) GetTotal() (int64, error) {
+	var total int64
+	err := sq.
 		Select("COUNT(*) AS count").
 		From(packageTable).
 		RunWith(DB).
 		QueryRow().
-		Scan(&pagination.Total)
+		Scan(&total)
 	if err != nil {
-		return nil, pagination, err
+		return 0, err
 	}
-	return packages, pagination, nil
+	return total, nil
 }
 
 // GetAllInIDStr package row

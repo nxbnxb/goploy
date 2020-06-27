@@ -12,37 +12,49 @@ import (
 type Template Controller
 
 // GetList template list
-func (template Template) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (Template) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Template   model.Templates  `json:"templateList"`
-		Pagination model.Pagination `json:"pagination"`
+		Templates   model.Templates  `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	templateList, pagination, err := model.Template{}.GetList(pagination)
+	templateList, err := model.Template{}.GetList(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Template: templateList, Pagination: pagination}}
+	return &core.Response{Data: RespData{Templates: templateList}}
+}
+
+// GetTotal template total
+func (Template) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	total, err := model.Template{}.GetTotal()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetOption template list
-func (template Template) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (Template) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Template model.Templates `json:"templateList"`
+		Templates model.Templates `json:"list"`
 	}
 
 	templateList, err := model.Template{}.GetAll()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Template: templateList}}
+	return &core.Response{Data: RespData{Templates: templateList}}
 }
 
 // Add one template
-func (template Template) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (Template) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		Name         string `json:"name" validate:"required"`
 		Remark       string `json:"remark"`
@@ -73,7 +85,7 @@ func (template Template) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respo
 }
 
 // Edit one template
-func (template Template) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (Template) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID           int64  `json:"id" validate:"gt=0"`
 		Name         string `json:"name" validate:"required"`
@@ -100,7 +112,7 @@ func (template Template) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 }
 
 // Remove one Template
-func (template Template) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (Template) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID int64 `json:"id" validate:"gt=0"`
 	}

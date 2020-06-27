@@ -126,13 +126,15 @@
 <script>
 import {
   getList as getTemplateList,
+  getTotal as getTemplateTotal,
   add as addTemplate,
   edit as editTemplate,
   remove,
   removePackage
 } from '@/api/template'
 import {
-  getList as getPackageList
+  getList as getPackageList,
+  getTotal as getPackageTotal
 } from '@/api/package'
 
 import { humanSize } from '@/utils'
@@ -199,14 +201,20 @@ export default {
   created() {
     this.storeFormData()
     this.getTemplateList()
+    this.getTemplateTotal()
     this.getPackageList()
+    this.getPackageTotal()
   },
   methods: {
     getTemplateList() {
       getTemplateList(this.tplPagination).then((response) => {
-        const templateList = response.data.templateList || []
-        this.templateTableData = templateList
-        this.tplPagination = response.data.pagination
+        this.templateTableData = response.data.list
+      })
+    },
+
+    getTemplateTotal() {
+      getTemplateTotal().then((response) => {
+        this.tplPagination.total = response.data.total
       })
     },
 
@@ -217,12 +225,17 @@ export default {
 
     getPackageList() {
       getPackageList(this.pkgPagination).then((response) => {
-        const packageList = response.data.packageList || []
+        const packageList = response.data.list
         packageList.forEach((element) => {
           element.humanSize = humanSize(element.size)
         })
         this.packageOption = this.packageTableData = packageList
-        this.pkgPagination = response.data.pagination
+      })
+    },
+
+    getPackageTotal() {
+      getPackageTotal().then((response) => {
+        this.pkgPagination.total = response.data.total
       })
     },
 
@@ -241,6 +254,7 @@ export default {
       } else {
         this.$message.success('上传成功')
         this.getPackageList()
+        this.getPackageTotal()
       }
     },
 
@@ -277,6 +291,7 @@ export default {
         remove(data.id).then((response) => {
           this.$message.success('删除成功')
           this.getTemplateList()
+          this.getTemplateTotal()
         })
       }).catch(() => {
         this.$message.info('已取消删除')
@@ -302,6 +317,7 @@ export default {
       this.formProps.disabled = true
       addTemplate(this.formData).then((response) => {
         this.getTemplateList()
+        this.getTemplateTotal()
         this.$message.success('添加成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false

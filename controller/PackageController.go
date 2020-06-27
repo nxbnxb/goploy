@@ -13,34 +13,46 @@ import (
 // Package struct
 type Package Controller
 
-// GetList  list
+// GetList list
 func (Package) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Package    model.Packages   `json:"packageList"`
-		Pagination model.Pagination `json:"pagination"`
+		Packages    model.Packages   `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	packageList, pagination, err := model.Package{}.GetList(pagination)
+	packageList, err := model.Package{}.GetList(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Package: packageList, Pagination: pagination}}
+	return &core.Response{Data: RespData{Packages: packageList}}
+}
+
+// GetTotal total
+func (Package) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		Total int64 `json:"total"`
+	}
+	total, err := model.Package{}.GetTotal()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{Total: total}}
 }
 
 // GetOption  list
 func (Package) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Package model.Packages `json:"packageList"`
+		Packages model.Packages `json:"list"`
 	}
 
 	packageList, err := model.Package{}.GetAll()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{Package: packageList}}
+	return &core.Response{Data: RespData{Packages: packageList}}
 }
 
 // Upload file

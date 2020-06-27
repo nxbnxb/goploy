@@ -296,7 +296,7 @@ export default {
 
     getTemplateOption() {
       getTemplateOption().then((response) => {
-        this.templateOption = response.data.templateList || []
+        this.templateOption = response.data.list
       })
     },
 

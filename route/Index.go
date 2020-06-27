@@ -75,6 +75,7 @@ func Init() *router.Router {
 
 	// template route
 	rt.Add("/template/getList", router.GET, controller.Template{}.GetList)
+	rt.Add("/template/getTotal", router.GET, controller.Template{}.GetTotal)
 	rt.Add("/template/getOption", router.GET, controller.Template{}.GetOption)
 	rt.Add("/template/add", router.POST, controller.Template{}.Add)
 	rt.Add("/template/edit", router.POST, controller.Template{}.Edit)
@@ -82,6 +83,7 @@ func Init() *router.Router {
 
 	// template route
 	rt.Add("/package/getList", router.GET, controller.Package{}.GetList)
+	rt.Add("/package/getTotal", router.GET, controller.Package{}.GetTotal)
 	rt.Add("/package/getOption", router.GET, controller.Package{}.GetOption)
 	rt.Add("/package/upload", router.POST, controller.Package{}.Upload)
 
