@@ -2,13 +2,16 @@ package core
 
 import (
 	"errors"
+	"fmt"
+	"github.com/rakyll/statik/fs"
 	"goploy/model"
+	_ "goploy/statik"
 	"io/ioutil"
+	"log"
 	"mime"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -48,6 +51,14 @@ type Router struct {
 
 // Start a router
 func (rt *Router) Start() {
+	if os.Getenv("ENV") == "production" {
+		statikFS, err := fs.New()
+		if err != nil {
+			log.Fatal(err)
+		}
+		http.Handle("/static/", http.FileServer(statikFS))
+		http.Handle("/favicon.ico", http.FileServer(statikFS))
+	}
 	http.Handle("/", rt)
 }
 
@@ -90,19 +101,21 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// else serve file in npm
 	if os.Getenv("ENV") == "production" {
 		if "/" == r.URL.Path {
-			http.ServeFile(w, r, GlobalPath+"web/dist/index.html")
+			statikFS, err := fs.New()
+			if err != nil {
+				log.Fatal(err)
+			}
+			r, err := statikFS.Open("/index.html")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer r.Close()
+			contents, err := ioutil.ReadAll(r)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprint(w, string(contents))
 			return
 		}
-		files, _ := ioutil.ReadDir(GlobalPath + "web/dist")
-		for _, file := range files {
-			pattern := "^" + file.Name()
-			if match, _ := regexp.MatchString(pattern, r.URL.Path[1:]); match {
-				http.ServeFile(w, r, GlobalPath+"web/dist"+r.URL.Path)
-				return
-			}
-		}
 	}
-
 	gp, response := rt.checkLogin(w, r)
 	if response != nil {
 		response.JSON(w)

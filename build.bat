@@ -1,3 +1,4 @@
+statik -src=.\web\dist\
 ::go build linux
 SET GOOS=linux
 SET GOARCH=amd64
