@@ -14,8 +14,8 @@ type ProjectServer struct {
 	ServerPort        int64  `json:"serverPort"`
 	ServerOwner       string `json:"serverOwner"`
 	ServerDescription string `json:"serverDescription"`
-	InsertTime        string  `json:"insertTime"`
-	UpdateTime        string  `json:"updateTime"`
+	InsertTime        string `json:"insertTime"`
+	UpdateTime        string `json:"updateTime"`
 }
 
 // ProjectServers project server relationship
@@ -49,7 +49,7 @@ func (ps ProjectServer) GetBindServerListByProjectID() (ProjectServers, error) {
 			&projectServer.ServerDescription,
 			&projectServer.InsertTime,
 			&projectServer.UpdateTime); err != nil {
-			return projectServers, err
+			return nil, err
 		}
 		projectServers = append(projectServers, projectServer)
 	}

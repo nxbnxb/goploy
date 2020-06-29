@@ -34,6 +34,18 @@ export function getRemoteServerList(serverId) {
   })
 }
 
+/**
+ * @param  {id} id
+ * @return {Promise}
+ */
+export function getBindServerList(id) {
+  return request({
+    url: '/crontab/getBindServerList',
+    method: 'get',
+    params: { id }
+  })
+}
+
 export function add(data) {
   return request({
     url: '/crontab/add',
@@ -61,6 +73,22 @@ export function importCrontab(data) {
 export function remove(data) {
   return request({
     url: '/crontab/remove',
+    method: 'delete',
+    data
+  })
+}
+
+export function addServer(data) {
+  return request({
+    url: '/crontab/addServer',
+    method: 'post',
+    data
+  })
+}
+
+export function removeCrontabServer(data) {
+  return request({
+    url: '/crontab/removeCrontabServer',
     method: 'delete',
     data
   })

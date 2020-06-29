@@ -24,10 +24,11 @@
       <el-table-column prop="editor" label="修改人" min-width="50" />
       <el-table-column prop="insertTime" label="创建时间" width="135" />
       <el-table-column prop="updateTime" label="更新时间" width="135" />
-      <el-table-column prop="operation" label="操作" width="150" fixed="right">
+      <el-table-column prop="operation" label="操作" width="255" fixed="right">
         <template slot-scope="scope">
-          <el-button size="small" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleRemove(scope.row)">删除</el-button>
+          <el-button type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+          <el-button type="warning" @click="handleServer(scope.row)">查看服务器</el-button>
+          <el-button type="danger" @click="handleRemove(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -118,12 +119,56 @@
         <el-button :disabled="importProps.disabled" type="primary" @click="importCrontab">确 定</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="服务器管理" :visible.sync="serverVisible">
+      <el-row class="app-bar" type="flex" justify="end">
+        <el-button type="primary" icon="el-icon-plus" @click="handleAddServer">添加</el-button>
+      </el-row>
+      <el-table
+        border
+        stripe
+        highlight-current-row
+        :data="tableServerData"
+        style="width: 100%"
+      >
+        <el-table-column prop="serverId" label="服务器ID" width="100" />
+        <el-table-column prop="serverName" label="服务器名称" width="100" />
+        <el-table-column prop="serverDescription" label="服务器描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="insertTime" width="160" label="绑定时间" />
+        <el-table-column prop="updateTime" width="160" label="更新时间" />
+        <el-table-column prop="operation" label="操作" width="80">
+          <template slot-scope="scope">
+            <el-button type="danger" @click="removeCrontabServer(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="serverVisible = false">取 消</el-button>
+      </div>
+    </el-dialog>
+    <el-dialog title="添加服务器" :visible.sync="addServerVisible">
+      <el-form ref="addServerForm" :rules="addServerFormRules" :model="addServerFormData">
+        <el-form-item label="绑定服务器" label-width="120px" prop="serverIds">
+          <el-select v-model="addServerFormData.serverIds" multiple placeholder="选择服务器，可多选">
+            <el-option
+              v-for="(item, index) in serverOption"
+              :key="index"
+              :label="item.label"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="addServerVisible = false">取 消</el-button>
+        <el-button :disabled="addServerFormProps.disabled" type="primary" @click="addServer">确 定</el-button>
+      </div>
+    </el-dialog>
   </el-row>
 </template>
 <script>
 import tableHeight from '@/mixin/tableHeight'
 import cronstrue from 'cronstrue/i18n'
-import { getList, getTotal, getRemoteServerList, add, edit, remove, importCrontab } from '@/api/crontab'
+import { getList, getTotal, getRemoteServerList, getBindServerList, add, edit, remove, importCrontab, addServer, removeCrontabServer } from '@/api/crontab'
 import { getOption as getServerOption } from '@/api/server'
 
 export default {
@@ -141,9 +186,12 @@ export default {
       crontabCommand: '',
       dialogVisible: false,
       crontabRemoveVisible: false,
+      serverVisible: false,
+      addServerVisible: false,
       importVisible: false,
       selectedItems: [],
       tableData: [],
+      tableServerData: [],
       serverOption: [],
       pagination: {
         page: 1,
@@ -182,6 +230,18 @@ export default {
       crontabRemoveFormProps: {
         command: '',
         disabled: false
+      },
+      addServerFormProps: {
+        disabled: false
+      },
+      addServerFormData: {
+        crontabId: 0,
+        serverIds: []
+      },
+      addServerFormRules: {
+        serverIds: [
+          { type: 'array', required: true, message: '请选择服务器', trigger: 'change' }
+        ]
       },
       serverTableData: []
     }
@@ -242,6 +302,12 @@ export default {
       }).finally(() => { this.importProps.disabled = false })
     },
 
+    getBindServerList(crontabID) {
+      getBindServerList(crontabID).then((response) => {
+        this.tableServerData = response.data.list
+      })
+    },
+
     searchList() {
       this.pagination.page = 1
       this.getList()
@@ -263,6 +329,16 @@ export default {
       this.formData.script = data.script
       this.formProps.dateCN = data.dateCN
       this.dialogVisible = true
+    },
+
+    handleServer(data) {
+      this.getBindServerList(data.id)
+      this.addServerFormData.crontabId = data.id
+      this.serverVisible = true
+    },
+
+    handleAddServer() {
+      this.addServerVisible = true
     },
 
     handleRemove(data) {
@@ -340,6 +416,38 @@ export default {
         this.$message.success('删除成功')
       }).finally(() => {
         this.crontabRemoveFormProps.disabled = this.crontabRemoveVisible = false
+      })
+    },
+
+    addServer() {
+      this.$refs.addServerForm.validate((valid) => {
+        if (valid) {
+          this.addServerFormProps.disabled = true
+          addServer(this.addServerFormData).then((response) => {
+            this.addServerVisible = false
+            this.$message.success('添加成功')
+            this.getBindServerList(this.addServerFormData.crontabId)
+          }).finally(() => {
+            this.addServerFormProps.disabled = false
+          })
+        } else {
+          return false
+        }
+      })
+    },
+
+    removeCrontabServer(data) {
+      this.$confirm('此操作将永久删除该服务器的绑定关系, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        removeCrontabServer({ crontabServerId: data.id, crontabId: data.crontabId, serverId: data.serverId }).then((response) => {
+          this.$message.success('删除成功')
+          this.getBindServerList(data.crontabId)
+        })
+      }).catch(() => {
+        this.$message.info('已取消删除')
       })
     }
   }

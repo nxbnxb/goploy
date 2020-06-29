@@ -697,13 +697,13 @@ export default {
 
     getBindServerList(projectID) {
       getBindServerList(projectID).then((response) => {
-        this.tableServerData = response.data.projectServerMap || []
+        this.tableServerData = response.data.list
       })
     },
 
     getBindUserList(projectID) {
       getBindUserList(projectID).then((response) => {
-        this.tableUserData = response.data.projectUserMap || []
+        this.tableUserData = response.data.list
       })
     },
 

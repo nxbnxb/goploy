@@ -96,6 +96,22 @@ func (crontab Crontab) GetRemoteServerList(w http.ResponseWriter, gp *core.Goplo
 	return &core.Response{Data: RespData{crontabs}}
 }
 
+// GetBindServerList project detail
+func (crontab Crontab) GetBindServerList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type RespData struct {
+		CrontabServers model.CrontabServers `json:"list"`
+	}
+	id, err := strconv.ParseInt(gp.URLQuery.Get("id"), 10, 64)
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	crontabServers, err := model.CrontabServer{CrontabID: id}.GetBindServerListByProjectID()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	return &core.Response{Data: RespData{CrontabServers: crontabServers}}
+}
+
 // Add one crontab
 func (crontab Crontab) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
@@ -277,6 +293,70 @@ func (crontab Crontab) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+
+	return &core.Response{}
+}
+
+// AddServer one crontab
+func (crontab Crontab) AddServer(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type ReqData struct {
+		CrontabID int64   `json:"crontabId" validate:"gt=0"`
+		ServerIDs []int64 `json:"serverIds" validate:"required"`
+	}
+	var reqData ReqData
+	if err := verify(gp.Body, &reqData); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	crontabID := reqData.CrontabID
+
+	crontabInfo, err := model.Crontab{ID: crontabID}.GetData()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	crontabServersModel := model.CrontabServers{}
+	for _, serverID := range reqData.ServerIDs {
+		crontabServerModel := model.CrontabServer{
+			CrontabID: crontabID,
+			ServerID:  serverID,
+		}
+		go addCrontab(serverID, crontabInfo.Command)
+		crontabServersModel = append(crontabServersModel, crontabServerModel)
+	}
+
+	if err := crontabServersModel.AddMany(); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+
+	}
+	return &core.Response{}
+}
+
+// RemoveCrontabServer one crontab
+func (crontab Crontab) RemoveCrontabServer(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+	type ReqData struct {
+		CrontabServerID int64 `json:"crontabServerId" validate:"gt=0"`
+		CrontabID       int64 `json:"crontabId" validate:"gt=0"`
+		ServerID        int64 `json:"serverId" validate:"gt=0"`
+	}
+	var reqData ReqData
+	if err := verify(gp.Body, &reqData); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	crontabInfo, err := model.Crontab{ID: reqData.CrontabID}.GetData()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	err = model.CrontabServer{
+		ID: reqData.CrontabServerID,
+	}.DeleteRow()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	go deleteCrontab(reqData.ServerID, crontabInfo.Command)
 
 	return &core.Response{}
 }

@@ -36,7 +36,7 @@ func (pu ProjectUser) GetBindUserListByProjectID() (ProjectUsers, error) {
 		var projectUser ProjectUser
 
 		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.UserName, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
-			return projectUsers, err
+			return nil, err
 		}
 		projectUsers = append(projectUsers, projectUser)
 	}
@@ -60,7 +60,7 @@ func (pu ProjectUser) GetBindProjectListByUserID() (ProjectUsers, error) {
 		var projectUser ProjectUser
 
 		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.ProjectName, &projectUser.GroupID, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
-			return projectUsers, err
+			return nil, err
 		}
 		projectUsers = append(projectUsers, projectUser)
 	}
@@ -83,7 +83,7 @@ func (pu ProjectUser) GetListByUserID() (ProjectUsers, error) {
 		var projectUser ProjectUser
 
 		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
-			return projectUsers, err
+			return nil, err
 		}
 		projectUsers = append(projectUsers, projectUser)
 	}
@@ -127,7 +127,7 @@ func (pu ProjectUser) GetListLeftJoinProjectByUserID() (Projects, error) {
 			&project.LastPublishToken,
 			&project.DeployState,
 			&project.UpdateTime); err != nil {
-			return projects, err
+			return nil, err
 		}
 		projects = append(projects, project)
 	}

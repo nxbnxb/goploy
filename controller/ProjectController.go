@@ -106,33 +106,33 @@ func (project Project) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.R
 // GetBindServerList project detail
 func (project Project) GetBindServerList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		ProjectServers model.ProjectServers `json:"projectServerMap"`
+		ProjectServers model.ProjectServers `json:"list"`
 	}
 	id, err := strconv.ParseInt(gp.URLQuery.Get("id"), 10, 64)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	projectServersMap, err := model.ProjectServer{ProjectID: id}.GetBindServerListByProjectID()
+	projectServers, err := model.ProjectServer{ProjectID: id}.GetBindServerListByProjectID()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{ProjectServers: projectServersMap}}
+	return &core.Response{Data: RespData{ProjectServers: projectServers}}
 }
 
 // GetBindUserList project detail
 func (project Project) GetBindUserList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		ProjectUsers model.ProjectUsers `json:"projectUserMap"`
+		ProjectUsers model.ProjectUsers `json:"list"`
 	}
 	id, err := strconv.ParseInt(gp.URLQuery.Get("id"), 10, 64)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	projectUsersMap, err := model.ProjectUser{ProjectID: id}.GetBindUserListByProjectID()
+	projectUsers, err := model.ProjectUser{ProjectID: id}.GetBindUserListByProjectID()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	return &core.Response{Data: RespData{ProjectUsers: projectUsersMap}}
+	return &core.Response{Data: RespData{ProjectUsers: projectUsers}}
 }
 
 // GetBindProjectList project detail

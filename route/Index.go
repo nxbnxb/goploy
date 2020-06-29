@@ -91,10 +91,13 @@ func Init() *router.Router {
 	rt.Add("/crontab/getList", router.GET, controller.Crontab{}.GetList)
 	rt.Add("/crontab/getTotal", router.GET, controller.Crontab{}.GetTotal)
 	rt.Add("/crontab/getRemoteServerList", router.GET, controller.Crontab{}.GetRemoteServerList)
+	rt.Add("/crontab/getBindServerList", router.GET, controller.Crontab{}.GetBindServerList)
 	rt.Add("/crontab/add", router.POST, controller.Crontab{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/crontab/edit", router.POST, controller.Crontab{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/crontab/import", router.POST, controller.Crontab{}.Import).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/crontab/remove", router.DELETE, controller.Crontab{}.Remove).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/crontab/addServer", router.POST, controller.Crontab{}.AddServer).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/crontab/removeCrontabServer", router.DELETE, controller.Crontab{}.RemoveCrontabServer).Roles([]string{core.RoleAdmin, core.RoleManager})
 
 	// group route
 	rt.Add("/group/getList", router.GET, controller.Group{}.GetList).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
