@@ -115,7 +115,7 @@
         </el-table>
       </el-row>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button @click="importVisible = false">取 消</el-button>
         <el-button :disabled="importProps.disabled" type="primary" @click="importCrontab">确 定</el-button>
       </div>
     </el-dialog>
@@ -327,6 +327,7 @@ export default {
       this.formData.id = data.id
       this.formData.date = data.date
       this.formData.script = data.script
+      this.formData.serverIds = []
       this.formProps.dateCN = data.dateCN
       this.dialogVisible = true
     },
