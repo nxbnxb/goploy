@@ -3,7 +3,6 @@ package controller
 import (
 	"bytes"
 	"crypto/md5"
-	"database/sql"
 	"encoding/hex"
 	"goploy/core"
 	"goploy/model"
@@ -19,7 +18,7 @@ type Crontab Controller
 // GetList crontab list
 func (crontab Crontab) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Crontabs   model.Crontabs   `json:"list"`
+		Crontabs model.Crontabs `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -100,7 +99,8 @@ func (crontab Crontab) GetRemoteServerList(w http.ResponseWriter, gp *core.Goplo
 // Add one crontab
 func (crontab Crontab) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		Command string `json:"command" validate:"required"`
+		Command   string  `json:"command" validate:"required"`
+		ServerIDs []int64 `json:"serverIds"`
 	}
 	type RespData struct {
 		ID int64 `json:"id"`
@@ -110,14 +110,7 @@ func (crontab Crontab) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	crontabInfo, err := model.Crontab{Command: reqData.Command}.GetDataByCommand()
-	if err != nil && err != sql.ErrNoRows {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	} else if crontabInfo != (model.Crontab{}) {
-		return &core.Response{Code: core.Error, Message: "Command is already exist"}
-	}
-
-	id, err := model.Crontab{
+	crontabID, err := model.Crontab{
 		Command:   reqData.Command,
 		Creator:   gp.UserInfo.Name,
 		CreatorID: gp.UserInfo.ID,
@@ -125,9 +118,28 @@ func (crontab Crontab) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
-
 	}
-	return &core.Response{Data: RespData{ID: id}}
+
+	if len(reqData.ServerIDs) == 0 {
+		return &core.Response{Data: RespData{ID: crontabID}}
+	}
+	crontabServersModel := model.CrontabServers{}
+	for _, serverID := range reqData.ServerIDs {
+		crontabServerModel := model.CrontabServer{
+			CrontabID: crontabID,
+			ServerID:  serverID,
+		}
+
+		go addCrontab(serverID, reqData.Command)
+
+		crontabServersModel = append(crontabServersModel, crontabServerModel)
+	}
+
+	if err := crontabServersModel.AddMany(); err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	return &core.Response{Data: RespData{ID: crontabID}}
 }
 
 // Edit one crontab
@@ -141,13 +153,9 @@ func (crontab Crontab) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	crontabInfo, err := model.Crontab{Command: reqData.Command}.GetDataByCommand()
+	crontabInfo, err := model.Crontab{ID: reqData.ID}.GetData()
 	if err != nil {
-		if err != sql.ErrNoRows {
-			return &core.Response{Code: core.Error, Message: err.Error()}
-		}
-	} else if crontabInfo.ID != reqData.ID {
-		return &core.Response{Code: core.Error, Message: "Command is already exist"}
+		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
 	err = model.Crontab{
@@ -160,6 +168,22 @@ func (crontab Crontab) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+
+	// 命令没修改过 不需要修改服务器的定时任务
+	if crontabInfo.Command == reqData.Command {
+		return &core.Response{}
+	}
+
+	crontabServers, err := model.CrontabServer{CrontabID: reqData.ID}.GetAllByCrontabID()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	for _, crontabServer := range crontabServers {
+		go deleteCrontab(crontabServer.ServerID, crontabInfo.Command)
+		go addCrontab(crontabServer.ServerID, reqData.Command)
+	}
+
 	return &core.Response{}
 }
 
@@ -228,4 +252,58 @@ func (crontab Crontab) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	return &core.Response{}
+}
+
+func addCrontab(serverID int64, command string) {
+	server, err := model.Server{
+		ID: serverID,
+	}.GetData()
+
+	if err != nil {
+		core.Log(core.TRACE, "serverID:"+strconv.FormatUint(uint64(serverID), 10)+" get server fail, detail:"+err.Error())
+		return
+	}
+
+	session, err := utils.ConnectSSH(server.Owner, "", server.IP, server.Port)
+
+	if err != nil {
+		core.Log(core.TRACE, "serverID:"+strconv.FormatUint(uint64(serverID), 10)+" connect server fail, detail:"+err.Error())
+		return
+	}
+
+	var sshOutbuf, sshErrbuf bytes.Buffer
+	session.Stdout = &sshOutbuf
+	session.Stderr = &sshErrbuf
+	sshOutbuf.Reset()
+	if err = session.Run(`(crontab -l ; echo "` + command + `") 2>&1 | grep -v "no crontab" | sort | uniq | crontab -`); err != nil {
+		core.Log(core.TRACE, "serverID:"+strconv.FormatUint(uint64(serverID), 10)+" add "+command+" fail, detail:"+sshErrbuf.String())
+		return
+	}
+}
+
+func deleteCrontab(serverID int64, command string) {
+	server, err := model.Server{
+		ID: serverID,
+	}.GetData()
+
+	if err != nil {
+		core.Log(core.TRACE, "serverID:"+strconv.FormatUint(uint64(serverID), 10)+" get server fail, detail:"+err.Error())
+		return
+	}
+
+	session, err := utils.ConnectSSH(server.Owner, "", server.IP, server.Port)
+
+	if err != nil {
+		core.Log(core.TRACE, "serverID:"+strconv.FormatUint(uint64(serverID), 10)+" connect server fail, detail:"+err.Error())
+		return
+	}
+
+	var sshOutbuf, sshErrbuf bytes.Buffer
+	session.Stdout = &sshOutbuf
+	session.Stderr = &sshErrbuf
+	sshOutbuf.Reset()
+	if err = session.Run(`(crontab -l ; echo "` + command + `") 2>&1 | grep -v "no crontab" | grep -v -F "` + command + `" | sort | uniq | crontab -`); err != nil {
+		core.Log(core.TRACE, "serverID:"+strconv.FormatUint(uint64(serverID), 10)+" delete "+command+" fail, detail:"+sshErrbuf.String())
+		return
+	}
 }

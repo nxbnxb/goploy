@@ -96,30 +96,13 @@ func (c Crontab) GetAllInCommandMD5(commandMD5s []string) (Crontabs, error) {
 func (c Crontab) GetData() (Crontab, error) {
 	var crontab Crontab
 	err := sq.
-		Select("id, command, creator, creator_id, editor, editor_id, insert_time, update_time").
+		Select("id, command, creator, creator_id, editor, editor_id").
 		From(crontabTable).
 		Where(sq.Eq{"id": c.ID}).
 		OrderBy("id DESC").
 		RunWith(DB).
 		QueryRow().
-		Scan(&crontab.ID, &crontab.Command, &crontab.Creator, &crontab.CreatorID, &crontab.Editor, &crontab.EditorID, &crontab.InsertTime, &crontab.UpdateTime)
-	if err != nil {
-		return crontab, err
-	}
-	return crontab, nil
-}
-
-// GetData add crontab information to s *Crontab
-func (c Crontab) GetDataByCommand() (Crontab, error) {
-	var crontab Crontab
-	err := sq.
-		Select("id, creator, creator_id, editor, editor_id, insert_time, update_time").
-		From(crontabTable).
-		Where(sq.Eq{"command": c.Command}).
-		OrderBy("id DESC").
-		RunWith(DB).
-		QueryRow().
-		Scan(&crontab.ID, &crontab.Creator, &crontab.CreatorID, &crontab.Editor, &crontab.EditorID, &crontab.InsertTime, &crontab.UpdateTime)
+		Scan(&crontab.ID, &crontab.Command, &crontab.Creator, &crontab.CreatorID, &crontab.Editor, &crontab.EditorID)
 	if err != nil {
 		return crontab, err
 	}

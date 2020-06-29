@@ -44,11 +44,21 @@
     <el-dialog title="crontab设置" :visible.sync="dialogVisible">
       <el-form ref="form" v-loading="formProps.loading" :rules="formRules" :model="formData" label-width="80px">
         <el-form-item label="时间" prop="date">
-          <el-input v-model.trim="formData.date" autocomplete="off" placeholder="* * * * ?" @change="onDateChange" />
+          <el-input v-model="formData.date" autocomplete="off" placeholder="* * * * ?" @change="onDateChange" />
           <span>{{ formProps.dateCN }}</span>
         </el-form-item>
         <el-form-item label="脚本" prop="script">
           <el-input v-model.trim="formData.script" autocomplete="off" />
+        </el-form-item>
+        <el-form-item v-show="formData.id === 0" label="服务器" prop="serverIds">
+          <el-select v-model="formData.serverIds" multiple placeholder="选择服务器，可多选" style="width:100%" filterable>
+            <el-option
+              v-for="(item, index) in serverOption"
+              :key="index"
+              :label="item.label"
+              :value="item.id"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -131,7 +141,8 @@ export default {
         id: 0,
         command: '',
         date: '',
-        script: ''
+        script: '',
+        serverIds: []
       },
       formRules: {
         date: [
