@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"goploy/core"
-	"goploy/model"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
 
 	"github.com/patrickmn/go-cache"
 )

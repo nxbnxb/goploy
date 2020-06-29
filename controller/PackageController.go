@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"goploy/core"
-	"goploy/model"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
 )
 
 // Package struct

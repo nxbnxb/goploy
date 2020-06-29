@@ -2,8 +2,8 @@ package ws
 
 import (
 	"github.com/gorilla/websocket"
-	"goploy/core"
-	"goploy/model"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
 	"net/http"
 	"strings"
 	"time"

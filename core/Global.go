@@ -1,6 +1,6 @@
 package core
 
-import "goploy/utils"
+import "github.com/zhenorzz/goploy/utils"
 
 // GlobalPath current path end with /
 var GlobalPath = utils.GetCurrentPath()

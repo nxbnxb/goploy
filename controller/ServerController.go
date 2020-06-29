@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"goploy/core"
-	"goploy/model"
-	"goploy/utils"
-	"goploy/ws"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
+	"github.com/zhenorzz/goploy/utils"
+	"github.com/zhenorzz/goploy/ws"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"

@@ -1,4 +1,4 @@
-module goploy
+module github.com/zhenorzz/goploy
 
 go 1.12
 

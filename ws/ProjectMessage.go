@@ -1,7 +1,7 @@
 package ws
 
 import (
-	"goploy/model"
+	"github.com/zhenorzz/goploy/model"
 )
 
 // ProjectMessage is publish project message struct

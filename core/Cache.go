@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"goploy/model"
+	"github.com/zhenorzz/goploy/model"
 
 	"github.com/patrickmn/go-cache"
 )

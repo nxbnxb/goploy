@@ -1,7 +1,7 @@
 package test
 
 import (
-	router "goploy/core"
+	router "github.com/zhenorzz/goploy/core"
 	"testing"
 )
 

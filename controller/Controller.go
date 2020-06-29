@@ -3,8 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"github.com/zhenorzz/goploy/core"
 	"gopkg.in/go-playground/validator.v9"
-	"goploy/core"
 )
 
 // Controller struct

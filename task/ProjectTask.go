@@ -3,9 +3,9 @@ package task
 import (
 	"database/sql"
 	"github.com/google/uuid"
-	"goploy/core"
-	"goploy/model"
-	"goploy/service"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
+	"github.com/zhenorzz/goploy/service"
 	"time"
 )
 

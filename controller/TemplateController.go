@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"goploy/core"
-	"goploy/model"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
 )
 
 // Template struct

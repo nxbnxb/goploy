@@ -2,8 +2,8 @@ package controller
 
 import (
 	"encoding/json"
-	"goploy/core"
-	"goploy/model"
+	"github.com/zhenorzz/goploy/core"
+	"github.com/zhenorzz/goploy/model"
 	"net/http"
 	"strconv"
 	"strings"
