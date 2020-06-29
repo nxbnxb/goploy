@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`log`  (
   `user_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户ID',
   `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `create_time`(`create_time`) USING BTREE
+  INDEX `idx_create_time`(`create_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`project`  (
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`project_server`  (
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `project_id`(`project_id`, `server_id`) USING BTREE
+  UNIQUE INDEX `uk_project_server`(`project_id`, `server_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`project_user`  (
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`project_user`  (
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `project_id`(`project_id`, `user_id`) USING BTREE
+  UNIQUE INDEX `uk_project_user`(`project_id`, `user_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`project_task` (
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`project_task` (
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `project_update` (`project_id`,`update_time`) USING BTREE COMMENT 'project_id,update_time'
+  KEY `index_project_update` (`project_id`,`update_time`) USING BTREE COMMENT 'project_id,update_time'
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`group`  (
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`publish_trace` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `ext` longtext NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `project_id` (`project_id`) USING BTREE COMMENT 'project_id'
+  KEY `idx_project_id` (`project_id`) USING BTREE COMMENT 'project_id'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`server`  (
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`server`  (
 CREATE TABLE IF NOT EXISTS `goploy`.`crontab` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `command` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `command_md5` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'command md5 for search',
+  `command_md5` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'command md5 for replace',
   `creator_id` int(10) unsigned NOT NULL DEFAULT '0',
   `creator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `editor_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -128,6 +128,16 @@ CREATE TABLE IF NOT EXISTS `goploy`.`crontab` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `uk_command_md5` (`command_md5`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `goploy`.`crontab_server` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `crontab_id` int(10) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `idx_crontab_server` (`crontab_id`,`server_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`template` (
@@ -164,7 +174,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`install_trace` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `ext` text NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `project_id` (`server_id`) USING BTREE COMMENT 'project_id'
+  KEY `idx_project_id` (`server_id`) USING BTREE COMMENT 'project_id'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`user`  (
