@@ -68,3 +68,13 @@ func (cs CrontabServer) DeleteRow() error {
 		Exec()
 	return err
 }
+
+// DeleteRow edit one row to table server
+func (cs CrontabServer) DeleteRowByCrontabID() error {
+	_, err := sq.
+		Delete(crontabServerTable).
+		Where(sq.Eq{"crontab_id": cs.CrontabID}).
+		RunWith(DB).
+		Exec()
+	return err
+}

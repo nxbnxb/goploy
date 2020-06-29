@@ -66,6 +66,23 @@
         <el-button :disabled="formProps.disabled" type="primary" @click="submit">确 定</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="crontab移除" :visible.sync="crontabRemoveVisible" width="400px">
+      <el-form ref="crontabRemoveForm" :model="crontabRemoveFormData" label-width="80px">
+        <el-form-item label="命令" label-width="45px">
+          <span>{{ crontabRemoveFormProps.command }}</span>
+        </el-form-item>
+        <el-form-item label="删除服务器Crontab任务" label-width="170px">
+          <el-radio-group v-model="crontabRemoveFormData.radio">
+            <el-radio :label="0">否</el-radio>
+            <el-radio :label="1">是</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="crontabRemoveVisible = false">取 消</el-button>
+        <el-button :disabled="crontabRemoveFormProps.disabled" type="primary" @click="remove">确 定</el-button>
+      </div>
+    </el-dialog>
     <el-dialog title="crontab导入" :visible.sync="importVisible">
       <el-row>
         <el-row type="flex">
@@ -123,6 +140,7 @@ export default {
     return {
       crontabCommand: '',
       dialogVisible: false,
+      crontabRemoveVisible: false,
       importVisible: false,
       selectedItems: [],
       tableData: [],
@@ -156,6 +174,14 @@ export default {
         serverId: '',
         disabled: false,
         loading: false
+      },
+      crontabRemoveFormData: {
+        id: 0,
+        radio: 0
+      },
+      crontabRemoveFormProps: {
+        command: '',
+        disabled: false
       },
       serverTableData: []
     }
@@ -240,19 +266,9 @@ export default {
     },
 
     handleRemove(data) {
-      this.$confirm('此操作将删除该定时任务, 是否继续?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        remove(data.id).then((response) => {
-          this.$message.success('删除成功')
-          this.getList()
-          this.getTotal()
-        })
-      }).catch(() => {
-        this.$message.info('已取消删除')
-      })
+      this.crontabRemoveFormData.id = data.id
+      this.crontabRemoveFormProps.command = data.command
+      this.crontabRemoveVisible = true
     },
 
     handleCrontabSelectionChange(items) {
@@ -313,6 +329,17 @@ export default {
         this.$message.success('编辑成功')
       }).finally(() => {
         this.formProps.disabled = this.dialogVisible = false
+      })
+    },
+
+    remove() {
+      this.crontabRemoveFormProps.disabled = true
+      remove(this.crontabRemoveFormData).then((response) => {
+        this.getList()
+        this.getTotal()
+        this.$message.success('删除成功')
+      }).finally(() => {
+        this.crontabRemoveFormProps.disabled = this.crontabRemoveVisible = false
       })
     }
   }

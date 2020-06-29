@@ -238,19 +238,46 @@ func (crontab Crontab) Import(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 // Remove one Crontab
 func (crontab Crontab) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ID int64 `json:"id" validate:"gt=0"`
+		ID    int64 `json:"id" validate:"gt=0"`
+		Radio int8  `json:"radio" validate:"min=0,max=1"`
 	}
 	var reqData ReqData
 	if err := verify(gp.Body, &reqData); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+
+	if reqData.Radio == 1 {
+		crontabInfo, err := model.Crontab{ID: reqData.ID}.GetData()
+		if err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
+		}
+
+		crontabServers, err := model.CrontabServer{CrontabID: reqData.ID}.GetAllByCrontabID()
+		if err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
+		}
+
+		for _, crontabServer := range crontabServers {
+			go deleteCrontab(crontabServer.ServerID, crontabInfo.Command)
+		}
+	}
+
 	err := model.Crontab{
 		ID: reqData.ID,
-	}.Remove()
+	}.DeleteRow()
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+
+	err = model.CrontabServer{
+		CrontabID: reqData.ID,
+	}.DeleteRowByCrontabID()
+
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
 	return &core.Response{}
 }
 

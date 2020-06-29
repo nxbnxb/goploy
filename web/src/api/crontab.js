@@ -58,10 +58,10 @@ export function importCrontab(data) {
   })
 }
 
-export function remove(id) {
+export function remove(data) {
   return request({
     url: '/crontab/remove',
     method: 'delete',
-    data: { id }
+    data
   })
 }

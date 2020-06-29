@@ -156,13 +156,10 @@ func (c Crontab) EditRow() error {
 	return err
 }
 
-// Remove Crontab
-func (c Crontab) Remove() error {
+// DeleteRow Crontab
+func (c Crontab) DeleteRow() error {
 	_, err := sq.
-		Update(projectTable).
-		SetMap(sq.Eq{
-			"state": Disable,
-		}).
+		Delete(crontabTable).
 		Where(sq.Eq{"id": c.ID}).
 		RunWith(DB).
 		Exec()
