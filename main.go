@@ -11,11 +11,9 @@ import (
 	"github.com/zhenorzz/goploy/task"
 	"github.com/zhenorzz/goploy/utils"
 	"github.com/zhenorzz/goploy/ws"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -117,23 +115,10 @@ func install() {
 	if err != nil {
 		panic(err)
 	}
-	statement, err := ioutil.ReadFile("./goploy.sql")
-	if err != nil {
+	defer db.Close()
+	if err := model.ImportSQL(db); err != nil {
 		panic(err)
 	}
-
-	for _, s := range strings.Split(string(statement), ";") {
-		trimmed := strings.TrimSpace(s)
-		if len(trimmed) == 0 {
-			continue
-		}
-		_, err := db.Exec(trimmed)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	db.Close()
 	println("安装数据库完成")
 	envContent := ""
 	envContent += "DB_TYPE=mysql\n"
