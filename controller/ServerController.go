@@ -15,7 +15,6 @@ import (
 	"github.com/zhenorzz/goploy/ws"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/ssh"
 )
 
 // Server struct
@@ -283,40 +282,14 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 		cmd.Stdout = &outbuf
 		cmd.Stderr = &errbuf
 		core.Log(core.TRACE, "projectID:"+strconv.FormatUint(uint64(server.ID), 10)+" rsync "+strings.Join(rsyncOption, " "))
-		var rsyncError error
-		// 失败重试三次
-		for attempt := 0; attempt < 3; attempt++ {
-			rsyncError = cmd.Run()
-			if rsyncError != nil {
-				core.Log(core.ERROR, errbuf.String())
-			} else {
-				ext, _ := json.Marshal(struct {
-					Command string `json:"command"`
-				}{"rsync " + strings.Join(rsyncOption, " ")})
-				installTraceModel.Ext = string(ext)
-				installTraceModel.Detail = outbuf.String()
-				installTraceModel.State = model.Success
-				installTraceModel.AddRow()
+		rsyncError := cmd.Run()
+		ext, _ := json.Marshal(struct {
+			Command string `json:"command"`
+		}{"rsync " + strings.Join(rsyncOption, " ")})
 
-				ws.GetHub().Data <- &ws.Data{
-					Type:    ws.TypeServerTemplate,
-					UserIDs: []int64{userInfo.ID},
-					Message: ws.ServerTemplateMessage{
-						ServerID:   installTraceModel.ServerID,
-						ServerName: installTraceModel.ServerName,
-						Detail:     installTraceModel.Detail,
-						Ext:        installTraceModel.Ext,
-					},
-				}
-				break
-			}
-		}
-
+		installTraceModel.Ext = string(ext)
+		installTraceModel.Type = model.Rsync
 		if rsyncError != nil {
-			ext, _ := json.Marshal(struct {
-				Command string `json:"command"`
-			}{"rsync " + strings.Join(rsyncOption, " ")})
-			installTraceModel.Ext = string(ext)
 			installTraceModel.Detail = errbuf.String()
 			installTraceModel.State = model.Fail
 			installTraceModel.AddRow()
@@ -327,79 +300,38 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 					ServerID:   installTraceModel.ServerID,
 					ServerName: installTraceModel.ServerName,
 					Detail:     installTraceModel.Detail,
-					Ext:        installTraceModel.Ext,
+					Ext:        string(ext),
+					Type:       ws.ServerTemplateRsync,
 				},
 			}
 			return
 		}
-	}
 
-	var session *ssh.Session
-	var connectError error
-	var scriptError error
-	for attempt := 0; attempt < 3; attempt++ {
-		session, connectError = utils.ConnectSSH(server.Owner, "", server.IP, server.Port)
-		if connectError != nil {
-			core.Log(core.ERROR, connectError.Error())
-		} else {
-			ext, _ := json.Marshal(struct {
-				SSH string `json:"ssh"`
-			}{"ssh -p" + strconv.Itoa(server.Port) + " " + server.Owner + "@" + server.IP})
-			installTraceModel.Ext = string(ext)
-			installTraceModel.Type = model.SSH
-			installTraceModel.State = model.Success
-			installTraceModel.Detail = "connected"
-			installTraceModel.AddRow()
-			ws.GetHub().Data <- &ws.Data{
-				Type:    ws.TypeServerTemplate,
-				UserIDs: []int64{userInfo.ID},
-				Message: ws.ServerTemplateMessage{
-					ServerID:   installTraceModel.ServerID,
-					ServerName: installTraceModel.ServerName,
-					Detail:     installTraceModel.Detail,
-					Ext:        installTraceModel.Ext,
-				},
-			}
-			var sshOutbuf, sshErrbuf bytes.Buffer
-			session.Stdout = &sshOutbuf
-			session.Stderr = &sshErrbuf
-			sshOutbuf.Reset()
-			templateInstallScript := "echo '" + template.Script + "' > /tmp/template-install.sh;bash /tmp/template-install.sh"
-			if scriptError = session.Run(templateInstallScript); scriptError != nil {
-				core.Log(core.ERROR, scriptError.Error())
-			} else {
-				ext, _ := json.Marshal(struct {
-					Script string `json:"script"`
-				}{template.Script})
-				installTraceModel.Ext = string(ext)
-				installTraceModel.Type = model.Script
-				installTraceModel.State = model.Success
-				installTraceModel.Detail = sshOutbuf.String()
-				installTraceModel.AddRow()
-				ws.GetHub().Data <- &ws.Data{
-					Type:    ws.TypeServerTemplate,
-					UserIDs: []int64{userInfo.ID},
-					Message: ws.ServerTemplateMessage{
-						ServerID:   installTraceModel.ServerID,
-						ServerName: installTraceModel.ServerName,
-						Detail:     installTraceModel.Detail,
-						Ext:        installTraceModel.Ext,
-					},
-				}
-				break
-			}
+		installTraceModel.Detail = outbuf.String()
+		installTraceModel.State = model.Success
+		installTraceModel.AddRow()
+
+		ws.GetHub().Data <- &ws.Data{
+			Type:    ws.TypeServerTemplate,
+			UserIDs: []int64{userInfo.ID},
+			Message: ws.ServerTemplateMessage{
+				ServerID:   installTraceModel.ServerID,
+				ServerName: installTraceModel.ServerName,
+				Detail:     installTraceModel.Detail,
+				Ext:        string(ext),
+				Type:       ws.ServerTemplateRsync,
+			},
 		}
+	}
 
-	}
-	if session != nil {
-		defer session.Close()
-	}
+	var scriptError error
+	session, connectError := utils.ConnectSSH(server.Owner, "", server.IP, server.Port)
+	ext, _ := json.Marshal(struct {
+		SSH string `json:"ssh"`
+	}{"ssh -p" + strconv.Itoa(server.Port) + " " + server.Owner + "@" + server.IP})
+	installTraceModel.Ext = string(ext)
+	installTraceModel.Type = model.SSH
 	if connectError != nil {
-		ext, _ := json.Marshal(struct {
-			SSH string `json:"ssh"`
-		}{"ssh -p" + strconv.Itoa(server.Port) + " " + server.Owner + "@" + server.IP})
-		installTraceModel.Ext = string(ext)
-		installTraceModel.Type = model.SSH
 		installTraceModel.State = model.Fail
 		installTraceModel.Detail = connectError.Error()
 		installTraceModel.AddRow()
@@ -410,16 +342,38 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 				ServerID:   installTraceModel.ServerID,
 				ServerName: installTraceModel.ServerName,
 				Detail:     installTraceModel.Detail,
-				Ext:        installTraceModel.Ext,
+				Ext:        string(ext),
+				Type:       ws.ServerTemplateSSH,
 			},
 		}
 		return
-	} else if scriptError != nil {
-		ext, _ := json.Marshal(struct {
-			Script string `json:"script"`
-		}{template.Script})
-		installTraceModel.Ext = string(ext)
-		installTraceModel.Type = model.Script
+	}
+
+	installTraceModel.State = model.Success
+	installTraceModel.Detail = "connected"
+	installTraceModel.AddRow()
+	ws.GetHub().Data <- &ws.Data{
+		Type:    ws.TypeServerTemplate,
+		UserIDs: []int64{userInfo.ID},
+		Message: ws.ServerTemplateMessage{
+			ServerID:   installTraceModel.ServerID,
+			ServerName: installTraceModel.ServerName,
+			Detail:     installTraceModel.Detail,
+			Ext:        string(ext),
+			Type:       ws.ServerTemplateSSH,
+		},
+	}
+	defer session.Close()
+	var sshOutbuf, sshErrbuf bytes.Buffer
+	session.Stdout = &sshOutbuf
+	session.Stderr = &sshErrbuf
+	templateInstallScript := "echo '" + template.Script + "' > /tmp/template-install.sh;bash /tmp/template-install.sh"
+	ext, _ = json.Marshal(struct {
+		Script string `json:"script"`
+	}{template.Script})
+	installTraceModel.Ext = string(ext)
+	installTraceModel.Type = model.Script
+	if scriptError = session.Run(templateInstallScript); scriptError != nil {
 		installTraceModel.State = model.Fail
 		installTraceModel.Detail = scriptError.Error()
 		installTraceModel.AddRow()
@@ -430,10 +384,25 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 				ServerID:   installTraceModel.ServerID,
 				ServerName: installTraceModel.ServerName,
 				Detail:     installTraceModel.Detail,
-				Ext:        installTraceModel.Ext,
+				Ext:        string(ext),
+				Type:       ws.ServerTemplateScript,
 			},
 		}
 		return
+	}
+	installTraceModel.State = model.Success
+	installTraceModel.Detail = sshOutbuf.String()
+	installTraceModel.AddRow()
+	ws.GetHub().Data <- &ws.Data{
+		Type:    ws.TypeServerTemplate,
+		UserIDs: []int64{userInfo.ID},
+		Message: ws.ServerTemplateMessage{
+			ServerID:   installTraceModel.ServerID,
+			ServerName: installTraceModel.ServerName,
+			Detail:     installTraceModel.Detail,
+			Ext:        string(ext),
+			Type:       ws.ServerTemplateScript,
+		},
 	}
 	return
 }
