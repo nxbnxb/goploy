@@ -314,7 +314,7 @@
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="commitDialogVisible = false">取 消</el-button>
+        <el-button @click="taskListDialogVisible = false">取 消</el-button>
       </div>
     </el-dialog>
   </el-row>

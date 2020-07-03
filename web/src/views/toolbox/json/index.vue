@@ -27,7 +27,6 @@
 <script>
 import './jsonTree.css'
 import { jsonTree } from './jsonTree'
-import { debounce } from '@/utils'
 export default {
   name: 'JSONFormatter',
   data() {
@@ -46,26 +45,18 @@ export default {
     this.$refs.jsonStringInput.focus()
   },
   methods: {
-    handleInput: debounce(function() {
+    handleInput() {
       const wrapper = this.$refs.jsonPrettyString
       const text = this.inputContent
-      if (text.length === 0) {
-        wrapper.innerText = ''
-        return
-      }
+      wrapper.innerText = ''
       try {
         const data = JSON.parse(text)
-
-        if (this.tree) {
-          this.tree.loadData(data)
-        } else {
-          this.tree = jsonTree.create(data, wrapper)
-        }
+        this.tree = jsonTree.create(data, wrapper)
         this.tree.expand()
       } catch (error) {
         wrapper.innerText = error.message
       }
-    }),
+    },
 
     expandAll() {
       this.tree && this.tree.expand()

@@ -4,7 +4,7 @@
 
     <breadcrumb class="breadcrumb-container" />
     <div class="right">
-      <div class="github">
+      <div v-show="false" class="github">
         <span class="github-btn">
           <a class="gh-btn" href="https://github.com/zhenorzz" target="_blank">
             <span class="gh-ico" />

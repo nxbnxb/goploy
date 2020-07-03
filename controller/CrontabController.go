@@ -86,6 +86,10 @@ func (crontab Crontab) GetRemoteServerList(w http.ResponseWriter, gp *core.Goplo
 		if len(crontab) == 0 {
 			continue
 		}
+		// skip error format
+		if len(strings.Split(crontab, " ")) < 5 {
+			continue
+		}
 		// skip comment
 		if strings.Index("#", crontab) == 0 {
 			continue
