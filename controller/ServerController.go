@@ -264,7 +264,7 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 		}
 		srcPath := core.PackagePath
 		remoteMachine := server.Owner + "@" + server.IP
-		destPath := remoteMachine + ":/tmp"
+		destPath := remoteMachine + ":/tmp/goploy"
 		rsyncOption := []string{
 			"-rtv",
 			"-e",
@@ -367,7 +367,7 @@ func remoteInstall(userInfo model.User, server model.Server, template model.Temp
 	var sshOutbuf, sshErrbuf bytes.Buffer
 	session.Stdout = &sshOutbuf
 	session.Stderr = &sshErrbuf
-	templateInstallScript := "echo '" + template.Script + "' > /tmp/template-install.sh;bash /tmp/template-install.sh"
+	templateInstallScript := "echo '" + template.Script + "' > /tmp/goploy/template-install.sh;bash /tmp/goploy/template-install.sh"
 	ext, _ = json.Marshal(struct {
 		Script string `json:"script"`
 	}{template.Script})

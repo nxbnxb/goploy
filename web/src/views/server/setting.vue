@@ -406,10 +406,7 @@ export default {
           this.templateFormProps.disabled = this.templateDialogVisible = false
           this.installLog = ''
           install(this.templateFormData.serverId, this.templateFormData.templateId).then((response) => {
-            this.$message({
-              message: response.message,
-              duration: 5 * 1000
-            })
+            this.$message.success(response.message)
           })
         } else {
           return false
