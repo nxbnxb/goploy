@@ -9,9 +9,15 @@
 - Rsync(linux mac自带，windows需要安装)
 
 # 安装 Goploy
+方法1:
+
+```
+go get -u github.com/zhenorzz/goploy
+```
+
+方法2: 
 
 下载源码
-
 - https://github.com/zhenorzz/goploy
 - https://gitee.com/zhenorzz/goploy
 
