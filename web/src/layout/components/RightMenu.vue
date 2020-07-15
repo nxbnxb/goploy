@@ -7,7 +7,10 @@
     >
       <div style="margin: 0 30px">
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('time')">时间转换</el-link></el-row>
+        <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('password')">随机密码</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('unicode')">unicode</el-link></el-row>
+        <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('decodeURI')">decodeURI</el-link></el-row>
+        <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('md5')">md5</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('cron')">cron生成</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('qrcode')">二维码</el-link></el-row>
         <el-row class="fab-item"><el-link :underline="false" @click="showTransformDialog('byte')">字节转换</el-link></el-row>
@@ -75,6 +78,57 @@
             readonly
           />
         </el-row>
+        <el-row v-show="transformType === 'decodeURI'">
+          <el-input
+            v-model="decodeURI.escape"
+            type="textarea"
+            :autosize="{ minRows: 2}"
+            placeholder="请输入未转义的URI"
+          />
+          <el-input
+            :value="decodeURI.escape ? decodeURI(decodeURI.escape) : ''"
+            style="margin-top:10px"
+            type="textarea"
+            :autosize="{ minRows: 2}"
+            readonly
+          />
+        </el-row>
+        <el-row v-show="transformType === 'password'">
+          <el-checkbox-group v-model="password.checkbox">
+            <el-checkbox :label="1">A-Z</el-checkbox>
+            <el-checkbox :label="2">a-z</el-checkbox>
+            <el-checkbox :label="3">0-9</el-checkbox>
+            <el-checkbox :label="4">!@#$%^&*</el-checkbox>
+          </el-checkbox-group>
+          <el-row style="margin-top: 10px">
+            <span style="display:inline-block;width:60px;font-size:14px;margin-right:5px">密码长度</span>
+            <el-input-number
+              v-model="password.length"
+              :min="1"
+              placeholder="请输入密码长度"
+            />
+            <el-button type="primary" @click="createPassword">生成>></el-button>
+          </el-row>
+
+          <el-input
+            :value="password.text"
+            style="margin-top:10px"
+            readonly
+          />
+        </el-row>
+        <el-row v-show="transformType === 'md5'">
+          <el-input
+            v-model="md5.text"
+            type="textarea"
+            :autosize="{ minRows: 3}"
+            placeholder="请输入....."
+          />
+          <el-input
+            :value="md5.text|md5"
+            style="margin-top:10px"
+            readonly
+          />
+        </el-row>
         <el-row v-show="transformType === 'color'">
           <el-row>
             <span style="display:inline-block;width:60px;font-size:14px;margin-right:10px">十六进制</span>
@@ -122,10 +176,12 @@
 import VueQrcode from 'vue-qrcode'
 import cronstrue from 'cronstrue/i18n'
 import { parseTime, humanSize } from '@/utils'
+import { md5 } from '@/utils/md5'
 export default {
   components: {
     VueQrcode
   },
+  filters: { md5 },
   data() {
     return {
       transformVisible: false,
@@ -156,6 +212,17 @@ export default {
       },
       unicode: {
         escape: ''
+      },
+      decodeURI: {
+        escape: ''
+      },
+      password: {
+        checkbox: [1, 2, 3],
+        length: 8,
+        text: ''
+      },
+      md5: {
+        text: ''
       },
       cron: {
         expression: '',
@@ -226,6 +293,31 @@ export default {
       } catch (error) {
         this.$message.error(error)
       }
+    },
+    createPassword() {
+      let randArr = []
+      for (const num of this.password.checkbox) {
+        if (num === 1) {
+          for (let i = 0; i < 26; i++) {
+            randArr.push(String.fromCharCode(65 + i))
+          }
+        } else if (num === 2) {
+          for (let i = 0; i < 26; i++) {
+            randArr.push(String.fromCharCode(97 + i))
+          }
+        } else if (num === 3) {
+          for (let i = 0; i < 10; i++) {
+            randArr.push(i)
+          }
+        } else {
+          randArr = randArr.concat(['!', '@', '#', '$', '%', '^', '&', '*'])
+        }
+      }
+      let password = ''
+      for (let i = 0; i < this.password.length; i++) {
+        password += randArr[Math.floor(Math.random() * randArr.length)]
+      }
+      this.password.text = password
     }
   }
 }
