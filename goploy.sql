@@ -207,4 +207,4 @@ CREATE TABLE `namespace_user` (
 
 INSERT INTO `goploy`.`user`(`id`, `account`, `password`, `name`, `mobile`, `state`, `super_manager`) VALUES (1, 'admin', '$2a$10$89ZJ2xeJj35GOw11Qiucr.phaEZP4.kBX6aKTs7oWFp1xcGBBgijm', '超管', '', 1, 1);
 INSERT INTO `goploy`.`namespace`(`id`, `name`) VALUES (1, 'goploy');
-INSERT INTO `goploy`.`namespace_user`(`id`, `namespace_id`, `user_id`, `role`, `insert_time`, `update_time`) VALUES (1, 1, 1, 'admin');
+INSERT INTO `goploy`.`namespace_user`(`id`, `namespace_id`, `user_id`, `role`) VALUES (1, 1, 1, 'admin');
