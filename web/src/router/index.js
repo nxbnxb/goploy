@@ -126,7 +126,7 @@ export const asyncRoutes = [
     meta: {
       title: '服务器管理',
       icon: 'server',
-      roles: ['admin', 'manager', 'group-manager']
+      roles: ['admin', 'manager']
     },
     children: [
       {
@@ -136,7 +136,7 @@ export const asyncRoutes = [
         meta: {
           title: '服务器设置',
           icon: 'setting',
-          roles: ['admin', 'manager', 'group-manager']
+          roles: ['admin', 'manager']
         }
       },
       {
@@ -146,7 +146,7 @@ export const asyncRoutes = [
         meta: {
           title: '模板设置',
           icon: 'template',
-          roles: ['admin', 'manager', 'group-manager']
+          roles: ['admin', 'manager']
         }
       },
       {
@@ -156,7 +156,29 @@ export const asyncRoutes = [
         meta: {
           title: 'Crontab管理',
           icon: 'crontab',
-          roles: ['admin', 'manager', 'group-manager']
+          roles: ['admin', 'manager']
+        }
+      }
+    ]
+  },
+  {
+    path: '/namespace',
+    name: '空间管理',
+    component: Layout,
+    meta: {
+      title: '空间管理',
+      icon: 'namespace',
+      roles: ['admin', 'manager']
+    },
+    children: [
+      {
+        path: 'setting',
+        name: '空间设置',
+        component: () => import('@/views/namespace/setting'),
+        meta: {
+          title: '空间设置',
+          icon: 'namespace',
+          roles: ['admin', 'manager']
         }
       }
     ]
@@ -181,28 +203,6 @@ export const asyncRoutes = [
         roles: ['admin']
       }
     }]
-  },
-  {
-    path: '/namespace',
-    name: '空间管理',
-    component: Layout,
-    meta: {
-      title: '空间管理',
-      icon: 'namespace',
-      roles: ['admin', 'manager']
-    },
-    children: [
-      {
-        path: 'setting',
-        name: '空间设置',
-        component: () => import('@/views/namespace/setting'),
-        meta: {
-          title: '空间设置',
-          icon: 'namespace',
-          roles: ['admin', 'manager']
-        }
-      }
-    ]
   },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }

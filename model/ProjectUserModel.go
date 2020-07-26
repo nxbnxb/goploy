@@ -1,14 +1,15 @@
 package model
 
 import (
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
+	"strings"
 )
 
 const projectUserTable = "`project_user`"
 
 // ProjectUser project user relationship
 type ProjectUser struct {
-	Project
 	ID          int64  `json:"id"`
 	ProjectID   int64  `json:"projectId"`
 	ProjectName string `json:"projectName"`
@@ -104,6 +105,39 @@ func (pu ProjectUsers) AddMany() error {
 	for _, row := range pu {
 		builder = builder.Values(row.ProjectID, row.UserID)
 	}
+	_, err := builder.RunWith(DB).Exec()
+	return err
+}
+
+// AddAdminByUserID add admin to table project_user
+func (pu ProjectUser) AddAdminByUserID() error {
+	builder := sq.
+		Replace(projectUserTable).
+		Columns("project_id", "user_id").
+		Select(sq.
+			Select(fmt.Sprintf("id as project_id, %d as user_id", pu.UserID)).
+			From(projectTable))
+	_, err := builder.RunWith(DB).Exec()
+	return err
+}
+
+// AddNamespaceProjectInUserID add all project with namespace in user id
+func (pu ProjectUser) AddNamespaceProjectInUserID(namespaceID int64, userIDs []int64) error {
+	userIDSQL := ""
+	for _, userID := range userIDs {
+		userIDSQL += fmt.Sprintf("SELECT %d as user_id UNION ", userID)
+	}
+
+	userIDSQL = "(" + strings.TrimRight(userIDSQL, " UNION ") + ") as t1"
+
+	builder := sq.
+		Replace(projectUserTable).
+		Columns("project_id", "user_id").
+		Select(sq.
+			Select("project.id as project_id, t1.user_id as user_id").
+			From(userIDSQL).
+			Join(projectTable).
+			Where(sq.Eq{"namespace_id": namespaceID}))
 	_, err := builder.RunWith(DB).Exec()
 	return err
 }

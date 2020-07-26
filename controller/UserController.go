@@ -69,7 +69,7 @@ func (user User) Login(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 }
 
 // Info get user info api
-func (user User) Info(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) Info(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		UserInfo struct {
 			ID           int64  `json:"id"`
@@ -87,7 +87,7 @@ func (user User) Info(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 }
 
 // GetList user list
-func (user User) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		Users model.Users `json:"list"`
 	}
@@ -116,7 +116,7 @@ func (user User) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Response
 }
 
 // GetOption user list
-func (user User) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) GetOption(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		Users model.Users `json:"list"`
 	}
@@ -128,13 +128,13 @@ func (user User) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 }
 
 // Add one user
-func (user User) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) Add(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		Account      string `json:"account" validate:"min=5,max=12"`
 		Password     string `json:"password" validate:"omitempty,password"`
 		Name         string `json:"name" validate:"required"`
 		Mobile       string `json:"mobile" validate:"omitempty,len=11,numeric"`
-		SuperManager int64  `json:"superManager" validate:"gt=0"`
+		SuperManager int64  `json:"superManager" validate:"min=0,max=1"`
 	}
 	type RespData struct {
 		ID int64 `json:"id"`
@@ -163,8 +163,10 @@ func (user User) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	}
 
 	if reqData.SuperManager == model.SuperManager {
-		err = model.NamespaceUser{UserID: id}.AddAdminByUserID()
-		if err != nil {
+		if err := (model.NamespaceUser{UserID: id}).AddAdminByUserID(); err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
+		}
+		if err := (model.ProjectUser{UserID: id}).AddAdminByUserID(); err != nil {
 			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
 	}
@@ -173,13 +175,13 @@ func (user User) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 }
 
 // Edit one user
-func (user User) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) Edit(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID           int64  `json:"id" validate:"gt=0"`
 		Password     string `json:"password" validate:"omitempty,password"`
 		Name         string `json:"name" validate:"required"`
 		Mobile       string `json:"mobile" validate:"omitempty,len=11,numeric"`
-		SuperManager int64  `json:"superManager" validate:"gt=0"`
+		SuperManager int64  `json:"superManager" validate:"min=0,max=1"`
 	}
 	var reqData ReqData
 	if err := verify(gp.Body, &reqData); err != nil {
@@ -204,13 +206,14 @@ func (user User) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	}
 
 	if userInfo.SuperManager == model.SuperManager && reqData.SuperManager == model.GeneralUser {
-		err = model.NamespaceUser{UserID: reqData.ID}.DeleteByUserID()
-		if err != nil {
+		if err := (model.NamespaceUser{UserID: reqData.ID}).DeleteByUserID(); err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
+		}
+		if err := (model.ProjectUser{UserID: reqData.ID}).DeleteByUserID(); err != nil {
 			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
 	} else if userInfo.SuperManager == model.GeneralUser && reqData.SuperManager == model.SuperManager {
-		err = model.NamespaceUser{UserID: reqData.ID}.AddAdminByUserID()
-		if err != nil {
+		if err := (model.NamespaceUser{UserID: reqData.ID}).AddAdminByUserID();err != nil {
 			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
 	}
@@ -219,7 +222,7 @@ func (user User) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 }
 
 // Remove one User
-func (user User) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) Remove(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID int64 `json:"id" validate:"gt=0"`
 	}
@@ -242,7 +245,7 @@ func (user User) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 }
 
 // ChangePassword doc
-func (user User) ChangePassword(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (user User) ChangePassword(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		OldPassword string `json:"oldPwd" validate:"password"`
 		NewPassword string `json:"newPwd" validate:"password"`

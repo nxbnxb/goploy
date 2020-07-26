@@ -33,10 +33,10 @@ func Init() *router.Router {
 	rt.Add("/user/changePassword", router.POST, controller.User{}.ChangePassword)
 
 	// namespace route
-	rt.Add("/namespace/getList", router.GET, controller.Namespace{}.GetList).Roles([]string{core.RoleAdmin, core.RoleManager})
-	rt.Add("/namespace/getTotal", router.GET, controller.Namespace{}.GetTotal).Roles([]string{core.RoleAdmin, core.RoleManager})
-	rt.Add("/namespace/getBindUserList", router.GET, controller.Namespace{}.GetBindUserList).Roles([]string{core.RoleAdmin, core.RoleManager})
-	rt.Add("/namespace/getUserOption", router.GET, controller.Namespace{}.GetUserOption).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/namespace/getList", router.GET, controller.Namespace{}.GetList)
+	rt.Add("/namespace/getTotal", router.GET, controller.Namespace{}.GetTotal)
+	rt.Add("/namespace/getBindUserList", router.GET, controller.Namespace{}.GetBindUserList)
+	rt.Add("/namespace/getUserOption", router.GET, controller.Namespace{}.GetUserOption)
 	rt.Add("/namespace/add", router.POST, controller.Namespace{}.Add).Role(core.RoleAdmin)
 	rt.Add("/namespace/edit", router.POST, controller.Namespace{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager})
 	rt.Add("/namespace/addUser", router.POST, controller.Namespace{}.AddUser).Roles([]string{core.RoleAdmin, core.RoleManager})
@@ -75,11 +75,11 @@ func Init() *router.Router {
 	rt.Add("/server/getInstallPreview", router.GET, controller.Server{}.GetInstallPreview)
 	rt.Add("/server/getInstallList", router.GET, controller.Server{}.GetInstallList)
 	rt.Add("/server/getOption", router.GET, controller.Server{}.GetOption)
-	rt.Add("/server/check", router.POST, controller.Server{}.Check).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
-	rt.Add("/server/add", router.POST, controller.Server{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
-	rt.Add("/server/edit", router.POST, controller.Server{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
-	rt.Add("/server/remove", router.DELETE, controller.Server{}.Remove).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
-	rt.Add("/server/install", router.POST, controller.Server{}.Install).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/server/check", router.POST, controller.Server{}.Check).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/server/add", router.POST, controller.Server{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/server/edit", router.POST, controller.Server{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/server/remove", router.DELETE, controller.Server{}.Remove).Roles([]string{core.RoleAdmin, core.RoleManager})
+	rt.Add("/server/install", router.POST, controller.Server{}.Install).Roles([]string{core.RoleAdmin, core.RoleManager})
 
 	// template route
 	rt.Add("/template/getList", router.GET, controller.Template{}.GetList)

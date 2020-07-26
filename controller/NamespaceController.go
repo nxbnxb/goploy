@@ -40,7 +40,7 @@ func (namespace Namespace) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *cor
 }
 
 // GetBindUserList user list
-func (namespace Namespace) GetUserOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (namespace Namespace) GetUserOption(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		NamespaceUsers model.NamespaceUsers `json:"list"`
 	}
@@ -53,7 +53,7 @@ func (namespace Namespace) GetUserOption(w http.ResponseWriter, gp *core.Goploy)
 }
 
 // GetBindUserList user list
-func (namespace Namespace) GetBindUserList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (namespace Namespace) GetBindUserList(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		NamespaceUsers model.NamespaceUsers `json:"list"`
 	}
@@ -69,7 +69,7 @@ func (namespace Namespace) GetBindUserList(w http.ResponseWriter, gp *core.Goplo
 }
 
 // Add one Namespace
-func (namespace Namespace) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (namespace Namespace) Add(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		Name string `json:"name" validate:"required"`
 	}
@@ -96,7 +96,7 @@ func (namespace Namespace) Add(w http.ResponseWriter, gp *core.Goploy) *core.Res
 }
 
 // Edit one Namespace
-func (namespace Namespace) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (namespace Namespace) Edit(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID   int64  `json:"id" validate:"gt=0"`
 		Name string `json:"name" validate:"required"`
@@ -117,7 +117,7 @@ func (namespace Namespace) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Re
 }
 
 // AddUser one project
-func (namespace Namespace) AddUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (namespace Namespace) AddUser(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		NamespaceID int64   `json:"namespaceId" validate:"gt=0"`
 		UserIDs     []int64 `json:"userIds" validate:"required"`
@@ -141,11 +141,19 @@ func (namespace Namespace) AddUser(w http.ResponseWriter, gp *core.Goploy) *core
 	if err := namespaceUsersModel.AddMany(); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+
+	if reqData.Role == core.RoleManager {
+		err := model.ProjectUser{}.AddNamespaceProjectInUserID(reqData.NamespaceID, reqData.UserIDs)
+		if err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
+		}
+	}
+
 	return &core.Response{}
 }
 
 // RemoveUser one Project
-func (namespace Namespace) RemoveUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+func (namespace Namespace) RemoveUser(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		NamespaceUserID int64 `json:"namespaceUserId" validate:"gt=0"`
 	}
