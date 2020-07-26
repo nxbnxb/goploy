@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`log`  (
 
 CREATE TABLE IF NOT EXISTS `goploy`.`project`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `group_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `namespace_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '项目名称',
   `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '项目仓库地址',
   `path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '项目部署路径',
@@ -75,14 +75,6 @@ CREATE TABLE IF NOT EXISTS `goploy`.`project_task` (
   KEY `index_project_update` (`project_id`,`update_time`) USING BTREE COMMENT 'project_id,update_time'
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `goploy`.`group`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
 CREATE TABLE IF NOT EXISTS `goploy`.`publish_trace` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `token` char(36) CHARACTER SET utf8mb4 NOT NULL DEFAULT '',
@@ -103,9 +95,9 @@ CREATE TABLE IF NOT EXISTS `goploy`.`publish_trace` (
 
 CREATE TABLE IF NOT EXISTS `goploy`.`server`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `group_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `namespace_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `ip` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `ip` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `port` smallint(10) UNSIGNED NOT NULL DEFAULT 22,
   `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
@@ -113,11 +105,13 @@ CREATE TABLE IF NOT EXISTS `goploy`.`server`  (
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `state` tinyint(10) UNSIGNED NOT NULL DEFAULT 1 COMMENT '0=>失效 1=>生效',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_namespace_ip` (`namespace_id`,`ip`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`crontab` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `namespace_id` int(10) unsigned NOT NULL DEFAULT 0,
   `command` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `command_md5` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'command md5 for replace',
   `creator_id` int(10) unsigned NOT NULL DEFAULT '0',
@@ -127,7 +121,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`crontab` (
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uk_command_md5` (`command_md5`) USING BTREE
+  UNIQUE KEY `uk_command_md5` (`namespace_id`,`command_md5`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`crontab_server` (
@@ -178,18 +172,39 @@ CREATE TABLE IF NOT EXISTS `goploy`.`install_trace` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`user`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `account` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `password` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `mobile` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `role` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'member',
-  `manage_group_str` text CHARACTER SET utf8mb4 NOT NULL COMMENT '管理分组逗号分割(空串没有管理权限，all管理全部)',
-  `state` tinyint(1) NOT NULL DEFAULT 1 COMMENT '0:=被禁用  1=正常',
+  `state` tinyint(1) NOT NULL DEFAULT '1' COMMENT '0:=被禁用  1=正常',
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `last_login_time` datetime DEFAULT NULL COMMENT '最后登陆时间',
+  `last_login_time` datetime DEFAULT NULL,
+  `super_manager` tinyint(4) unsigned NOT NULL DEFAULT '0' COMMENT '超级管理员',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
-INSERT INTO `goploy`.`user` (`account`, `password`, `name`, `mobile`, `role`, `manage_group_str`, `state`) VALUES ('admin', '$2a$10$89ZJ2xeJj35GOw11Qiucr.phaEZP4.kBX6aKTs7oWFp1xcGBBgijm', '超管', '18023496666', 'admin' ,'all', 1);
+CREATE TABLE `namespace` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `namespace_user` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `namespace_id` int(10) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
+  `role` varchar(20) NOT NULL,
+  `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_namespace_user` (`namespace_id`,`user_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `goploy`.`user`(`id`, `account`, `password`, `name`, `mobile`, `state`, `super_manager`) VALUES (1, 'admin', '$2a$10$89ZJ2xeJj35GOw11Qiucr.phaEZP4.kBX6aKTs7oWFp1xcGBBgijm', '超管', '', 1, 1);
+INSERT INTO `goploy`.`namespace`(`id`, `name`) VALUES (1, 'goploy');
+INSERT INTO `goploy`.`namespace_user`(`id`, `namespace_id`, `user_id`, `role`, `insert_time`, `update_time`) VALUES (1, 1, 1, 'admin');
