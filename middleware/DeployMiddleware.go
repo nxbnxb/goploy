@@ -19,7 +19,7 @@ func HasPublishAuth(w http.ResponseWriter, gp *core.Goploy) error {
 		return err
 	}
 
-	_, err := model.Project{ID: reqData.ProjectID}.GetUserProjectData(gp.UserInfo.ID, gp.UserInfo.Role, gp.UserInfo.ManageGroupStr)
+	_, err := model.Project{ID: reqData.ProjectID}.GetUserProjectData(gp.UserInfo.ID)
 	if err != nil {
 		return errors.New("no permission")
 	}

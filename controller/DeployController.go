@@ -22,18 +22,11 @@ func (deploy Deploy) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Respo
 	type RespData struct {
 		Project model.Projects `json:"list"`
 	}
-	groupIDStr := gp.URLQuery.Get("groupId")
-	groupID, err := strconv.ParseInt(groupIDStr, 10, 64)
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
-
 	projectName := gp.URLQuery.Get("projectName")
-	var projects model.Projects
-	projects, err = model.Project{
-		GroupID: groupID,
-		Name:    projectName,
-	}.GetUserProjectList(gp.UserInfo.ID, gp.UserInfo.Role, gp.UserInfo.ManageGroupStr)
+	projects, err := model.Project{
+		NamespaceID: gp.Namespace.ID,
+		Name:        projectName,
+	}.GetUserProjectList(gp.UserInfo.ID)
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}

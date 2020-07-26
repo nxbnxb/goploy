@@ -29,13 +29,7 @@ func (project Project) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Res
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	projectName := gp.URLQuery.Get("projectName")
-	var projectList model.Projects
-	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		projectList, err = model.Project{Name: projectName}.GetList(pagination, nil)
-	} else {
-		projectList, err = model.Project{Name: projectName}.GetList(pagination, strings.Split(gp.UserInfo.ManageGroupStr, ","))
-	}
-
+	projectList, err := model.Project{NamespaceID: gp.Namespace.ID, Name: projectName}.GetList(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -50,12 +44,7 @@ func (project Project) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Re
 	var total int64
 	var err error
 	projectName := gp.URLQuery.Get("projectName")
-	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		total, err = model.Project{Name: projectName}.GetTotal(nil)
-	} else {
-		total, err = model.Project{Name: projectName}.GetTotal(strings.Split(gp.UserInfo.ManageGroupStr, ","))
-	}
-
+	total, err = model.Project{NamespaceID: gp.Namespace.ID, Name: projectName}.GetTotal()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -87,20 +76,6 @@ func (project Project) GetRemoteBranchList(w http.ResponseWriter, gp *core.Goplo
 	}
 
 	return &core.Response{Data: RespData{Branch: branch}}
-}
-
-// GetOption Project list
-func (project Project) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
-	type RespData struct {
-		Projects model.Projects `json:"list"`
-	}
-
-	projectList, err := model.Project{}.GetAll()
-
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
-	return &core.Response{Data: RespData{Projects: projectList}}
 }
 
 // GetBindServerList project detail
@@ -154,7 +129,6 @@ func (project Project) GetBindProjectList(w http.ResponseWriter, gp *core.Goploy
 // Add one project
 func (project Project) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		GroupID               int64   `json:"groupId"`
 		Name                  string  `json:"name"`
 		URL                   string  `json:"url"`
 		Path                  string  `json:"path"`
@@ -188,7 +162,7 @@ func (project Project) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 	}
 
 	projectID, err := model.Project{
-		GroupID:               reqData.GroupID,
+		NamespaceID:           gp.Namespace.ID,
 		Name:                  reqData.Name,
 		URL:                   reqData.URL,
 		Path:                  reqData.Path,
@@ -229,6 +203,19 @@ func (project Project) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 		projectUsersModel = append(projectUsersModel, projectUserModel)
 	}
 
+	namespaceUsers, err := model.NamespaceUser{NamespaceID: gp.Namespace.ID}.GetAllGteManagerByNamespaceID()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	for _, namespaceUser := range namespaceUsers {
+		projectUserModel := model.ProjectUser{
+			ProjectID: projectID,
+			UserID:    namespaceUser.UserID,
+		}
+		projectUsersModel = append(projectUsersModel, projectUserModel)
+	}
+
 	if err := projectUsersModel.AddMany(); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -240,7 +227,6 @@ func (project Project) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 func (project Project) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID                    int64  `json:"id"`
-		GroupID               int64  `json:"groupId"`
 		Name                  string `json:"name"`
 		URL                   string `json:"url"`
 		Path                  string `json:"path"`
@@ -266,7 +252,7 @@ func (project Project) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 		return &core.Response{Code: core.Error, Message: "Invalid rsync option format"}
 	}
 
-	projectList, err := model.Project{Name: reqData.Name}.GetAllByName()
+	projectList, err := model.Project{NamespaceID: gp.Namespace.ID, Name: reqData.Name}.GetAllByName()
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return &core.Response{Code: core.Error, Message: err.Error()}
@@ -286,7 +272,6 @@ func (project Project) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 
 	err = model.Project{
 		ID:                    reqData.ID,
-		GroupID:               reqData.GroupID,
 		Name:                  reqData.Name,
 		URL:                   reqData.URL,
 		Path:                  reqData.Path,
@@ -382,8 +367,8 @@ func (project Project) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 // AddServer one project
 func (project Project) AddServer(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ProjectID int64   `json:"projectId"`
-		ServerIDs []int64 `json:"serverIds"`
+		ProjectID int64   `json:"projectId" validate:"gt=0"`
+		ServerIDs []int64 `json:"serverIds" validate:"required"`
 	}
 	var reqData ReqData
 	err := json.Unmarshal(gp.Body, &reqData)
@@ -411,12 +396,11 @@ func (project Project) AddServer(w http.ResponseWriter, gp *core.Goploy) *core.R
 // AddUser one project
 func (project Project) AddUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ProjectID int64   `json:"projectId"`
-		UserIDs   []int64 `json:"userIds"`
+		ProjectID int64   `json:"projectId" validate:"gt=0"`
+		UserIDs   []int64 `json:"userIds" validate:"required"`
 	}
 	var reqData ReqData
-	err := json.Unmarshal(gp.Body, &reqData)
-	if err != nil {
+	if err := verify(gp.Body, &reqData); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	projectID := reqData.ProjectID
@@ -436,10 +420,10 @@ func (project Project) AddUser(w http.ResponseWriter, gp *core.Goploy) *core.Res
 	return &core.Response{}
 }
 
-// RemoveProjectServer one Project
-func (project Project) RemoveProjectServer(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+// RemoveServer one Project
+func (project Project) RemoveServer(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ProjectServerID int64 `json:"projectServerId"`
+		ProjectServerID int64 `json:"projectServerId" validate:"gt=0"`
 	}
 	var reqData ReqData
 	err := json.Unmarshal(gp.Body, &reqData)
@@ -456,10 +440,10 @@ func (project Project) RemoveProjectServer(w http.ResponseWriter, gp *core.Goplo
 	return &core.Response{}
 }
 
-// RemoveProjectUser one Project
-func (project Project) RemoveProjectUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
+// RemoveUser one Project
+func (project Project) RemoveUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ProjectUserID int64 `json:"projectUserId"`
+		ProjectUserID int64 `json:"projectUserId" validate:"gt=0"`
 	}
 	var reqData ReqData
 	err := json.Unmarshal(gp.Body, &reqData)

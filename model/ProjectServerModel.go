@@ -63,7 +63,7 @@ func (ps ProjectServers) AddMany() error {
 	}
 
 	builder := sq.
-		Insert(projectServerTable).
+		Replace(projectServerTable).
 		Columns("project_id", "server_id")
 
 	for _, row := range ps {

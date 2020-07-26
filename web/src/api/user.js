@@ -49,16 +49,6 @@ export function getOption() {
 }
 
 /**
- * @return {Promise}
- */
-export function getCanBindProjectUser() {
-  return request({
-    url: '/user/getCanBindProjectUser',
-    method: 'get'
-  })
-}
-
-/**
  * @param  {string} account
  * @param  {string} password
  * @param  {string} name

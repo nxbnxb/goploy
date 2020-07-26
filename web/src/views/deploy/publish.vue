@@ -1,15 +1,6 @@
 <template>
   <el-row class="app-container">
     <el-row class="app-bar" type="flex">
-      <el-select v-model="groupId" placeholder="选择分组" @change="handleGroupChange">
-        <el-option label="默认" :value="0" />
-        <el-option
-          v-for="(item, index) in groupOption"
-          :key="index"
-          :label="item.name"
-          :value="item.id"
-        />
-      </el-select>
       <el-input v-model="projectName" style="width:300px" placeholder="请输入项目名称" @change="getList" />
     </el-row>
     <el-table
@@ -27,11 +18,6 @@
           <b v-if="scope.row.environment === '生产环境'" style="color: #F56C6C">{{ scope.row.name }} - {{ scope.row.environment }}</b>
           <b v-else-if="scope.row.environment === '测试环境'" style="color: #E6A23C">{{ scope.row.name }} - {{ scope.row.environment }}</b>
           <b v-else style="color: #909399">{{ scope.row.name }} - {{ scope.row.environment }}</b>
-        </template>
-      </el-table-column>
-      <el-table-column prop="group" label="分组" align="center">
-        <template slot-scope="scope">
-          {{ findGroupName(scope.row.groupId) }}
         </template>
       </el-table-column>
       <el-table-column prop="branch" label="分支" align="center" />
@@ -323,7 +309,6 @@
 import tableHeight from '@/mixin/tableHeight'
 import { getList, getDetail, getPreview, getCommitList, publish } from '@/api/deploy'
 import { addTask, editTask, removeTask, getTaskList } from '@/api/project'
-import { getDeployOption as getDeployGroupOption } from '@/api/group'
 import { getOption as getUserOption } from '@/api/user'
 import { parseTime } from '@/utils'
 
@@ -331,9 +316,7 @@ export default {
   mixins: [tableHeight],
   data() {
     return {
-      groupId: parseInt(localStorage.getItem('groupId')) || 0,
       userId: '',
-      groupOption: [],
       userOption: [],
       projectName: '',
       publishToken: '',
@@ -446,22 +429,10 @@ export default {
   },
   created() {
     this.getList()
-    this.getDeployGroupOption()
     this.getUserOption()
   },
   methods: {
     parseTime,
-    handleGroupChange(groupId) {
-      localStorage.setItem('groupId', groupId)
-      this.groupId = groupId
-      this.getList()
-    },
-
-    getDeployGroupOption() {
-      getDeployGroupOption().then((response) => {
-        this.groupOption = response.data.list
-      })
-    },
 
     getUserOption() {
       getUserOption().then((response) => {
@@ -470,7 +441,7 @@ export default {
     },
 
     getList() {
-      getList(this.groupId, this.projectName).then((response) => {
+      getList(this.projectName).then((response) => {
         this.tableData = response.data.list.map(element => {
           element.progressPercentage = 0
           element.tagType = 'info'
@@ -722,11 +693,6 @@ export default {
       }).catch(() => {
         this.$message.info('已取消重新构建')
       })
-    },
-
-    findGroupName(groupId) {
-      const projectGroup = this.groupOption.find(element => element.id === groupId)
-      return projectGroup ? projectGroup['name'] : '默认'
     },
 
     formatDetail(detail) {

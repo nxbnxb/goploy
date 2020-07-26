@@ -3,14 +3,13 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/patrickmn/go-cache"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/zhenorzz/goploy/core"
 	"github.com/zhenorzz/goploy/model"
-
-	"github.com/patrickmn/go-cache"
 )
 
 // User 用户字段
@@ -23,7 +22,8 @@ func (user User) Login(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 		Password string `json:"password" validate:"password"`
 	}
 	type RespData struct {
-		Token string `json:"token"`
+		Token         string           `json:"token"`
+		NamespaceList model.Namespaces `json:"namespaceList"`
 	}
 	var reqData ReqData
 	err := json.Unmarshal(gp.Body, &reqData)
@@ -43,40 +43,53 @@ func (user User) Login(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 		return &core.Response{Code: core.AccountDisabled, Message: "Account is disabled"}
 	}
 
+	namespaceList, err := core.GetNamespace(userData.ID)
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: "尚未分配空间，请联系管理员"}
+	}
+
 	token, err := userData.CreateToken()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+
 	model.User{ID: userData.ID, LastLoginTime: time.Now().Format("20060102150405")}.UpdateLastLoginTime()
 
 	core.Cache.Set("userInfo:"+strconv.Itoa(int(userData.ID)), &userData, cache.DefaultExpiration)
+
+	namespaceList, err = model.Namespace{UserID: userData.ID}.GetAllByUserID()
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+	core.Cache.Set("namespace:"+strconv.Itoa(int(userData.ID)), &namespaceList, cache.DefaultExpiration)
+
 	cookie := http.Cookie{Name: core.LoginCookieName, Value: token, Path: "/", MaxAge: 86400, HttpOnly: true}
 	http.SetCookie(w, &cookie)
-	return &core.Response{Data: RespData{Token: token}}
+	return &core.Response{Data: RespData{Token: token, NamespaceList: namespaceList}}
 }
 
 // Info get user info api
 func (user User) Info(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		UserInfo struct {
-			ID      int64  `json:"id"`
-			Account string `json:"account"`
-			Name    string `json:"name"`
-			Role    string `json:"role"`
+			ID           int64  `json:"id"`
+			Account      string `json:"account"`
+			Name         string `json:"name"`
+			SuperManager int64  `json:"superManager"`
 		} `json:"userInfo"`
 	}
 	data := RespData{}
 	data.UserInfo.ID = gp.UserInfo.ID
 	data.UserInfo.Name = gp.UserInfo.Name
 	data.UserInfo.Account = gp.UserInfo.Account
-	data.UserInfo.Role = gp.UserInfo.Role
+	data.UserInfo.SuperManager = gp.UserInfo.SuperManager
 	return &core.Response{Data: data}
 }
 
 // GetList user list
 func (user User) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Users       model.Users      `json:"list"`
+		Users model.Users `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -114,28 +127,14 @@ func (user User) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 	return &core.Response{Data: RespData{Users: users}}
 }
 
-// GetCanBindProjectUser user list
-func (user User) GetCanBindProjectUser(w http.ResponseWriter, gp *core.Goploy) *core.Response {
-	type RespData struct {
-		Users model.Users `json:"list"`
-	}
-	users, err := model.User{}.GetCanBindProjectUser()
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
-	return &core.Response{Data: RespData{Users: users}}
-}
-
 // Add one user
 func (user User) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		Account        string  `json:"account" validate:"min=5,max=12"`
-		Password       string  `json:"password" validate:"omitempty,password"`
-		Name           string  `json:"name" validate:"required"`
-		Mobile         string  `json:"mobile" validate:"omitempty,len=11,numeric"`
-		Role           string  `json:"role" validate:"role"`
-		ManageGroupStr string  `json:"manageGroupStr"`
-		ProjectIDs     []int64 `json:"projectIds"`
+		Account      string `json:"account" validate:"min=5,max=12"`
+		Password     string `json:"password" validate:"omitempty,password"`
+		Name         string `json:"name" validate:"required"`
+		Mobile       string `json:"mobile" validate:"omitempty,len=11,numeric"`
+		SuperManager int64  `json:"superManager" validate:"gt=0"`
 	}
 	type RespData struct {
 		ID int64 `json:"id"`
@@ -152,80 +151,70 @@ func (user User) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 		return &core.Response{Code: core.Error, Message: "Account is already exist"}
 	}
 	id, err := model.User{
-		Account:        reqData.Account,
-		Password:       reqData.Password,
-		Name:           reqData.Name,
-		Mobile:         reqData.Mobile,
-		Role:           reqData.Role,
-		ManageGroupStr: reqData.ManageGroupStr,
+		Account:      reqData.Account,
+		Password:     reqData.Password,
+		Name:         reqData.Name,
+		Mobile:       reqData.Mobile,
+		SuperManager: reqData.SuperManager,
 	}.AddRow()
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	projectUsersModel := model.ProjectUsers{}
-	for _, projectID := range reqData.ProjectIDs {
-		projectUserModel := model.ProjectUser{
-			ProjectID:  projectID,
-			UserID:     id,
+	if reqData.SuperManager == model.SuperManager {
+		err = model.NamespaceUser{UserID: id}.AddAdminByUserID()
+		if err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
-		projectUsersModel = append(projectUsersModel, projectUserModel)
 	}
-	if err := projectUsersModel.AddMany(); err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
+
 	return &core.Response{Data: RespData{ID: id}}
 }
 
 // Edit one user
 func (user User) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
-		ID             int64   `json:"id" validate:"gt=0"`
-		Password       string  `json:"password" validate:"omitempty,password"`
-		Name           string  `json:"name" validate:"required"`
-		Mobile         string  `json:"mobile" validate:"omitempty,len=11,numeric"`
-		Role           string  `json:"role" validate:"role"`
-		ManageGroupStr string  `json:"manageGroupStr"`
-		ProjectIDs     []int64 `json:"projectIds"`
+		ID           int64  `json:"id" validate:"gt=0"`
+		Password     string `json:"password" validate:"omitempty,password"`
+		Name         string `json:"name" validate:"required"`
+		Mobile       string `json:"mobile" validate:"omitempty,len=11,numeric"`
+		SuperManager int64  `json:"superManager" validate:"gt=0"`
 	}
 	var reqData ReqData
 	if err := verify(gp.Body, &reqData); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
+	userInfo, err := model.User{ID: reqData.ID}.GetData()
 
-	err := model.User{
-		ID:             reqData.ID,
-		Password:       reqData.Password,
-		Name:           reqData.Name,
-		Mobile:         reqData.Mobile,
-		Role:           reqData.Role,
-		ManageGroupStr: reqData.ManageGroupStr,
+	if err != nil {
+		return &core.Response{Code: core.Error, Message: err.Error()}
+	}
+
+	err = model.User{
+		ID:           reqData.ID,
+		Password:     reqData.Password,
+		Name:         reqData.Name,
+		Mobile:       reqData.Mobile,
+		SuperManager: reqData.SuperManager,
 	}.EditRow()
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 
-	err = model.ProjectUser{
-		UserID: reqData.ID,
-	}.DeleteByUserID()
-
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
-
-	projectUsersModel := model.ProjectUsers{}
-	for _, projectID := range reqData.ProjectIDs {
-		projectUserModel := model.ProjectUser{
-			ProjectID:  projectID,
-			UserID:     reqData.ID,
+	if userInfo.SuperManager == model.SuperManager && reqData.SuperManager == model.GeneralUser {
+		err = model.NamespaceUser{UserID: reqData.ID}.DeleteByUserID()
+		if err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
-		projectUsersModel = append(projectUsersModel, projectUserModel)
+	} else if userInfo.SuperManager == model.GeneralUser && reqData.SuperManager == model.SuperManager {
+		err = model.NamespaceUser{UserID: reqData.ID}.AddAdminByUserID()
+		if err != nil {
+			return &core.Response{Code: core.Error, Message: err.Error()}
+		}
 	}
-	if err := projectUsersModel.AddMany(); err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
+
 	return &core.Response{}
 }
 
@@ -243,7 +232,7 @@ func (user User) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	}
 
 	err := model.User{
-		ID:         reqData.ID,
+		ID: reqData.ID,
 	}.RemoveRow()
 
 	if err != nil {

@@ -8,15 +8,16 @@ const crontabTable = "`crontab`"
 
 // Crontab mysql table crontab
 type Crontab struct {
-	ID         int64  `json:"id"`
-	Command    string `json:"command"`
-	CommandMD5 string `json:"commandMD5"`
-	Creator    string `json:"creator"`
-	CreatorID  int64  `json:"creatorId"`
-	Editor     string `json:"editor"`
-	EditorID   int64  `json:"editorId"`
-	InsertTime string `json:"insertTime"`
-	UpdateTime string `json:"updateTime"`
+	ID          int64  `json:"id"`
+	NamespaceID int64  `json:"namespace_id"`
+	Command     string `json:"command"`
+	CommandMD5  string `json:"commandMD5"`
+	Creator     string `json:"creator"`
+	CreatorID   int64  `json:"creatorId"`
+	Editor      string `json:"editor"`
+	EditorID    int64  `json:"editorId"`
+	InsertTime  string `json:"insertTime"`
+	UpdateTime  string `json:"updateTime"`
 }
 
 // Crontabs many crontab
@@ -26,7 +27,8 @@ type Crontabs []Crontab
 func (c Crontab) GetList(pagination Pagination) (Crontabs, error) {
 	builder := sq.
 		Select("id, command, creator, creator_id, editor, editor_id, insert_time, update_time").
-		From(crontabTable)
+		From(crontabTable).
+		Where(sq.Eq{"namespace_id": c.NamespaceID})
 	if len(c.Command) > 0 {
 		builder = builder.Where(sq.Like{"command": "%" + c.Command + "%"})
 	}
@@ -55,7 +57,8 @@ func (c Crontab) GetTotal() (int64, error) {
 	var total int64
 	builder := sq.
 		Select("COUNT(*) AS count").
-		From(crontabTable)
+		From(crontabTable).
+		Where(sq.Eq{"namespace_id": c.NamespaceID})
 	if len(c.Command) > 0 {
 		builder = builder.Where(sq.Like{"command": "%" + c.Command + "%"})
 	}
@@ -113,8 +116,8 @@ func (c Crontab) GetData() (Crontab, error) {
 func (c Crontab) AddRow() (int64, error) {
 	result, err := sq.
 		Insert(crontabTable).
-		Columns("command", "command_md5", "creator", "creator_id").
-		Values(c.Command, sq.Expr("md5(?)", c.Command), c.Creator, c.CreatorID).
+		Columns("namespace_id", "command", "command_md5", "creator", "creator_id").
+		Values(c.NamespaceID, c.Command, sq.Expr("md5(?)", c.Command), c.Creator, c.CreatorID).
 		RunWith(DB).
 		Exec()
 	if err != nil {

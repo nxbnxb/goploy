@@ -29,14 +29,7 @@ func (server Server) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Respo
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-
-	var serverList model.Servers
-	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		serverList, err = model.Server{}.GetList(pagination, nil)
-	} else {
-		serverList, err = model.Server{}.GetList(pagination, strings.Split(gp.UserInfo.ManageGroupStr, ","))
-	}
-
+	serverList, err := model.Server{NamespaceID: gp.Namespace.ID}.GetList(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -48,14 +41,7 @@ func (server Server) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Resp
 	type RespData struct {
 		Total int64 `json:"total"`
 	}
-	var total int64
-	var err error
-	if gp.UserInfo.Role == core.RoleAdmin || gp.UserInfo.Role == core.RoleManager {
-		total, err = model.Server{}.GetTotal(nil)
-	} else {
-		total, err = model.Server{}.GetTotal(strings.Split(gp.UserInfo.ManageGroupStr, ","))
-	}
-
+	total, err := model.Server{NamespaceID: gp.Namespace.ID}.GetTotal()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -97,12 +83,12 @@ func (server Server) GetInstallList(w http.ResponseWriter, gp *core.Goploy) *cor
 }
 
 // GetOption server list
-func (server Server) GetOption(w http.ResponseWriter, _ *core.Goploy) *core.Response {
+func (server Server) GetOption(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
 		Servers model.Servers `json:"list"`
 	}
 
-	serverList, err := model.Server{}.GetAll()
+	serverList, err := model.Server{NamespaceID: gp.Namespace.ID}.GetAll()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -137,7 +123,6 @@ func (server Server) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response 
 		IP          string `json:"ip" validate:"ip4_addr"`
 		Port        int    `json:"port" validate:"min=0,max=65535"`
 		Owner       string `json:"owner" validate:"required"`
-		GroupID     int64  `json:"groupId" validate:"min=0"`
 		Description string `json:"description" validate:"max=255"`
 	}
 	type RespData struct {
@@ -153,7 +138,7 @@ func (server Server) Add(w http.ResponseWriter, gp *core.Goploy) *core.Response 
 		IP:          reqData.IP,
 		Port:        reqData.Port,
 		Owner:       reqData.Owner,
-		GroupID:     reqData.GroupID,
+		NamespaceID: gp.Namespace.ID,
 		Description: reqData.Description,
 	}.AddRow()
 
@@ -172,7 +157,6 @@ func (server Server) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response
 		IP          string `json:"ip" validate:"ip4_addr"`
 		Port        int    `json:"port" validate:"min=0,max=65535"`
 		Owner       string `json:"owner" validate:"required"`
-		GroupID     int64  `json:"groupId" validate:"min=0"`
 		Description string `json:"description" validate:"max=255"`
 	}
 	var reqData ReqData
@@ -185,7 +169,6 @@ func (server Server) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response
 		IP:          reqData.IP,
 		Port:        reqData.Port,
 		Owner:       reqData.Owner,
-		GroupID:     reqData.GroupID,
 		Description: reqData.Description,
 	}.EditRow()
 

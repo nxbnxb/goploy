@@ -4,7 +4,7 @@ const getters = {
   uid: state => state.user.id,
   name: state => state.user.name,
   account: state => state.user.account,
-  role: state => state.user.role,
+  superManager: state => state.user.superManager,
   permission_routes: state => state.permission.routes,
   ws_message: state => state.websocket.message
 }

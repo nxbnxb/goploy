@@ -162,28 +162,6 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/group',
-    name: '分组管理',
-    component: Layout,
-    meta: {
-      title: '分组管理',
-      icon: 'group',
-      roles: ['admin', 'manager', 'group-manager']
-    },
-    children: [
-      {
-        path: 'setting',
-        name: '分组设置',
-        component: () => import('@/views/group/setting'),
-        meta: {
-          title: '分组设置',
-          icon: 'group',
-          roles: ['admin', 'manager', 'group-manager']
-        }
-      }
-    ]
-  },
-  {
     path: '/member',
     component: Layout,
     redirect: '/member/list',
@@ -203,6 +181,28 @@ export const asyncRoutes = [
         roles: ['admin']
       }
     }]
+  },
+  {
+    path: '/namespace',
+    name: '空间管理',
+    component: Layout,
+    meta: {
+      title: '空间管理',
+      icon: 'namespace',
+      roles: ['admin', 'manager']
+    },
+    children: [
+      {
+        path: 'setting',
+        name: '空间设置',
+        component: () => import('@/views/namespace/setting'),
+        meta: {
+          title: '空间设置',
+          icon: 'namespace',
+          roles: ['admin', 'manager']
+        }
+      }
+    ]
   },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }

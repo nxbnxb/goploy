@@ -28,3 +28,20 @@ func GetUserInfo(userID int64) (model.User, error) {
 	}
 	return userData, nil
 }
+
+// GetUserInfo return model.User and error
+func GetNamespace(userID int64) (model.Namespaces, error) {
+	var namespaceList model.Namespaces
+	var err error
+	if x, found := Cache.Get("namespace:" + strconv.Itoa(int(userID))); found {
+		namespaceList = *x.(*model.Namespaces)
+	} else {
+		namespaceList, err = model.Namespace{UserID: userID}.GetAllByUserID()
+		if err != nil {
+			return namespaceList, err
+		}
+
+		Cache.Set("namespace:"+strconv.Itoa(int(userID)), &namespaceList, cache.DefaultExpiration)
+	}
+	return namespaceList, nil
+}

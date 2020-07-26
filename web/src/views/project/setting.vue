@@ -19,11 +19,6 @@
       <el-table-column prop="name" label="项目名称" width="200" />
       <el-table-column prop="url" label="项目地址" width="350" />
       <el-table-column prop="path" label="部署路径" min-width="200" />
-      <el-table-column prop="group" label="分组" width="100">
-        <template slot-scope="scope">
-          {{ findGroupName(scope.row.groupId) }}
-        </template>
-      </el-table-column>
       <el-table-column prop="environment" width="120" label="环境" />
       <el-table-column prop="branch" width="160" label="分支" />
       <el-table-column width="80" label="自动部署">
@@ -98,17 +93,6 @@
             <el-form-item label="rsync选项" prop="rsyncOption">
               <el-input v-model.trim="formData.rsyncOption" type="textarea" :rows="2" autocomplete="off" placeholder="-rtv --exclude .git --delete-after" />
             </el-form-item>
-            <el-form-item label="绑定分组" prop="groupId">
-              <el-select v-model="formData.groupId" placeholder="选择分组" style="width:100%">
-                <el-option v-if="hasGroupManagerPermission()" label="默认" :value="0" />
-                <el-option
-                  v-for="(item, index) in groupOption"
-                  :key="index"
-                  :label="item.name"
-                  :value="item.id"
-                />
-              </el-select>
-            </el-form-item>
             <el-form-item v-show="formProps.showServers" label="绑定服务器" prop="serverIds">
               <el-select v-model="formData.serverIds" multiple placeholder="选择服务器，可多选" style="width:100%">
                 <el-option
@@ -122,10 +106,10 @@
             <el-form-item v-show="formProps.showUsers" label="绑定用户" prop="userIds">
               <el-select v-model="formData.userIds" multiple placeholder="选择用户，可多选" style="width:100%">
                 <el-option
-                  v-for="(item, index) in userOption"
+                  v-for="(item, index) in userOption.filter(item => [$global.Admin, $global.Manager].indexOf(item.role) === -1)"
                   :key="index"
-                  :label="item.name"
-                  :value="item.id"
+                  :label="item.userName"
+                  :value="item.userId"
                 />
               </el-select>
             </el-form-item>
@@ -252,7 +236,7 @@
         <el-table-column prop="updateTime" width="160" label="更新时间" />
         <el-table-column prop="operation" label="操作" width="80">
           <template slot-scope="scope">
-            <el-button type="danger" @click="removeProjectServer(scope.row)">删除</el-button>
+            <el-button type="danger" @click="removeServer(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -277,7 +261,7 @@
         <el-table-column prop="updateTime" width="160" label="更新时间" />
         <el-table-column prop="operation" label="操作" width="80">
           <template slot-scope="scope">
-            <el-button type="danger" @click="removeProjectUser(scope.row)">删除</el-button>
+            <el-button type="danger" @click="removeUser(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -308,10 +292,10 @@
         <el-form-item label="绑定用户" label-width="120px" prop="userIds">
           <el-select v-model="addUserFormData.userIds" multiple placeholder="选择用户，可多选">
             <el-option
-              v-for="(item, index) in userOption"
+              v-for="(item, index) in userOption.filter(item => [$global.Admin, $global.Manager].indexOf(item.role) === -1)"
               :key="index"
-              :label="item.name"
-              :value="item.id"
+              :label="item.userName"
+              :value="item.userId"
             />
           </el-select>
         </el-form-item>
@@ -325,10 +309,9 @@
 </template>
 <script>
 import tableHeight from '@/mixin/tableHeight'
-import { getCanBindProjectUser } from '@/api/user'
+import { getUserOption } from '@/api/namespace'
 import { getOption as getServerOption } from '@/api/server'
-import { getOption as getGroupOption } from '@/api/group'
-import { getList, getTotal, getBindServerList, getBindUserList, getRemoteBranchList, add, edit, remove, addServer, addUser, removeProjectServer, removeProjectUser } from '@/api/project'
+import { getList, getTotal, getBindServerList, getBindUserList, getRemoteBranchList, add, edit, remove, addServer, addUser, removeServer, removeUser } from '@/api/project'
 // require component
 import { codemirror } from 'vue-codemirror'
 import 'codemirror/mode/shell/shell.js'
@@ -379,7 +362,6 @@ export default {
       dialogAddUserVisible: false,
       serverOption: [],
       userOption: [],
-      groupOption: [],
       tableData: [],
       pagination: {
         page: 1,
@@ -400,7 +382,6 @@ export default {
       tempFormData: {},
       formData: {
         id: 0,
-        groupId: '',
         name: '',
         url: '',
         path: '',
@@ -433,9 +414,6 @@ export default {
         ],
         branch: [
           { required: true, message: '请输入分支名称', trigger: ['blur'] }
-        ],
-        groupId: [
-          { required: true, message: '请选择分组', trigger: 'blur' }
         ],
         serverIds: [
           { type: 'array', message: '请选择服务器', trigger: 'change' }
@@ -540,13 +518,6 @@ export default {
       this.dialogServerVisible = true
     },
 
-    handleGroup(data) {
-      this.getBindServerList(data.id)
-      // 先把projectID写入添加服务器的表单
-      this.addServerFormData.projectId = data.id
-      this.dialogServerVisible = true
-    },
-
     handleUser(data) {
       this.getBindUserList(data.id)
       // 先把projectID写入添加用户的表单
@@ -636,13 +607,13 @@ export default {
       })
     },
 
-    removeProjectServer(data) {
+    removeServer(data) {
       this.$confirm('此操作将永久删除该服务器的绑定关系, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        removeProjectServer(data.id).then((response) => {
+        removeServer(data.id).then((response) => {
           this.$message.success('删除成功')
           this.getBindServerList(data.projectId)
         })
@@ -651,13 +622,13 @@ export default {
       })
     },
 
-    removeProjectUser(data) {
+    removeUser(data) {
       this.$confirm('此操作将永久删除该用户的绑定关系, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        removeProjectUser(data.id).then((response) => {
+        removeUser(data.id).then((response) => {
           this.$message.success('删除成功')
           this.getBindUserList(data.projectId)
         })
@@ -674,11 +645,8 @@ export default {
           return element
         })
       })
-      getCanBindProjectUser().then((response) => {
+      getUserOption().then((response) => {
         this.userOption = response.data.list
-      })
-      getGroupOption().then((response) => {
-        this.groupOption = response.data.list
       })
     },
 
@@ -731,11 +699,6 @@ export default {
     handlePageChange(val) {
       this.pagination.page = val
       this.getList()
-    },
-
-    findGroupName(groupId) {
-      const projectGroup = this.groupOption.find(element => element.id === groupId)
-      return projectGroup ? projectGroup['name'] : '默认'
     },
 
     storeFormData() {

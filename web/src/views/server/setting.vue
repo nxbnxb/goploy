@@ -17,11 +17,6 @@
         </template>
       </el-table-column>
       <el-table-column prop="owner" label="sshKey所有者" width="100" show-overflow-tooltip />
-      <el-table-column prop="group" label="分组" width="100">
-        <template slot-scope="scope">
-          {{ findGroupName(scope.row.groupId) }}
-        </template>
-      </el-table-column>
       <el-table-column prop="description" label="描述" min-width="140" show-overflow-tooltip />
       <el-table-column prop="insertTime" label="创建时间" width="160" />
       <el-table-column prop="updateTime" label="更新时间" width="160" />
@@ -56,17 +51,6 @@
         </el-form-item>
         <el-form-item label="sshKey所有者" prop="owner">
           <el-input v-model="formData.owner" autocomplete="off" placeholder="root" />
-        </el-form-item>
-        <el-form-item label="绑定分组" prop="groupId">
-          <el-select v-model="formData.groupId" placeholder="选择分组" style="width:100%">
-            <el-option v-if="hasGroupManagerPermission()" label="默认" :value="0" />
-            <el-option
-              v-for="(item, index) in groupOption"
-              :key="index"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
         </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input
@@ -126,7 +110,6 @@
 </template>
 <script>
 import { getList, getTotal, getInstallPreview, getInstallList, add, edit, check, remove, install } from '@/api/server'
-import { getOption as getGroupOption } from '@/api/group'
 import { getOption as getTemplateOption } from '@/api/template'
 // require component
 import { codemirror } from 'vue-codemirror'
@@ -153,7 +136,6 @@ export default {
         rows: 16,
         total: 0
       },
-      groupOption: [],
       templateOption: [],
       installToken: '',
       installPreviewList: [],
@@ -181,7 +163,6 @@ export default {
         ip: '',
         port: 22,
         owner: '',
-        groupId: '',
         description: ''
       },
       formRules: {
@@ -196,9 +177,6 @@ export default {
         ],
         owner: [
           { required: true, message: '请输入SSH-KEY的所有者', trigger: 'blur' }
-        ],
-        groupId: [
-          { required: true, message: '请选择分组', trigger: 'blur' }
         ],
         description: [
           { max: 255, message: '描述最多255个字符', trigger: 'blur' }
@@ -265,7 +243,6 @@ export default {
     this.storeFormData()
     this.getList()
     this.getTotal()
-    this.getGroupOption()
     this.getTemplateOption()
   },
 
@@ -286,12 +263,6 @@ export default {
     handlePageChange(val) {
       this.pagination.page = val
       this.getList()
-    },
-
-    getGroupOption() {
-      getGroupOption().then((response) => {
-        this.groupOption = response.data.list
-      })
     },
 
     getTemplateOption() {
@@ -412,11 +383,6 @@ export default {
           return false
         }
       })
-    },
-
-    findGroupName(groupId) {
-      const group = this.groupOption.find(element => element.id === groupId)
-      return group ? group['name'] : '默认'
     },
 
     formatDetail(detail) {

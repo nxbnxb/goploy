@@ -35,17 +35,6 @@ export function getRemoteBranchList(url) {
 }
 
 /**
- * @return {Promise}
- */
-export function getOption() {
-  return request({
-    url: '/project/getOption',
-    method: 'get',
-    params: { }
-  })
-}
-
-/**
  * @param  {id} id
  * @return {Promise}
  */
@@ -135,9 +124,9 @@ export function addUser(data) {
   })
 }
 
-export function removeProjectUser(projectUserId) {
+export function removeUser(projectUserId) {
   return request({
-    url: '/project/removeProjectUser',
+    url: '/project/removeUser',
     method: 'delete',
     data: {
       projectUserId
@@ -145,9 +134,9 @@ export function removeProjectUser(projectUserId) {
   })
 }
 
-export function removeProjectServer(projectServerId) {
+export function removeServer(projectServerId) {
   return request({
-    url: '/project/removeProjectServer',
+    url: '/project/removeServer',
     method: 'delete',
     data: {
       projectServerId

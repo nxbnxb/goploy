@@ -5,7 +5,7 @@ import request from '@/utils/request'
  */
 export function getList({ page, rows }) {
   return request({
-    url: '/group/getList',
+    url: '/namespace/getList',
     method: 'get',
     params: { page, rows }
   })
@@ -16,7 +16,7 @@ export function getList({ page, rows }) {
  */
 export function getTotal() {
   return request({
-    url: '/group/getTotal',
+    url: '/namespace/getTotal',
     method: 'get',
     params: { }
   })
@@ -25,26 +25,28 @@ export function getTotal() {
 /**
  * @return {Promise}
  */
-export function getOption() {
+export function getUserOption() {
   return request({
-    url: '/group/getOption',
+    url: '/namespace/getUserOption',
     method: 'get'
   })
 }
 
 /**
+ * @param  {id} id
  * @return {Promise}
  */
-export function getDeployOption() {
+export function getBindUserList(id) {
   return request({
-    url: '/group/getDeployOption',
-    method: 'get'
+    url: '/namespace/getBindUserList',
+    method: 'get',
+    params: { id }
   })
 }
 
 export function add(data) {
   return request({
-    url: '/group/add',
+    url: '/namespace/add',
     method: 'post',
     data
   })
@@ -52,16 +54,26 @@ export function add(data) {
 
 export function edit(data) {
   return request({
-    url: '/group/edit',
+    url: '/namespace/edit',
     method: 'post',
     data
   })
 }
 
-export function remove(id) {
+export function addUser(data) {
   return request({
-    url: '/group/remove',
+    url: '/namespace/addUser',
+    method: 'post',
+    data
+  })
+}
+
+export function removeUser(namespaceUserId) {
+  return request({
+    url: '/namespace/removeUser',
     method: 'delete',
-    data: { id }
+    data: {
+      namespaceUserId
+    }
   })
 }

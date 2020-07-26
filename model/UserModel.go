@@ -12,19 +12,21 @@ import (
 
 const userTable = "`user`"
 
+const SuperManager = 1
+const GeneralUser = 0
+
 // User mysql table user
 type User struct {
-	ID             int64  `json:"id"`
-	Account        string `json:"account"`
-	Password       string `json:"password"`
-	Name           string `json:"name"`
-	Mobile         string `json:"mobile"`
-	Role           string `json:"role"`
-	ManageGroupStr string `json:"manageGroupStr"`
-	State          uint8  `json:"state"`
-	InsertTime     string `json:"insertTime"`
-	UpdateTime     string `json:"updateTime"`
-	LastLoginTime  string `json:"lastLoginTime"`
+	ID            int64  `json:"id"`
+	Account       string `json:"account"`
+	Password      string `json:"password"`
+	Name          string `json:"name"`
+	Mobile        string `json:"mobile"`
+	SuperManager  int64  `json:"superManager"`
+	State         uint8  `json:"state"`
+	InsertTime    string `json:"insertTime"`
+	UpdateTime    string `json:"updateTime"`
+	LastLoginTime string `json:"lastLoginTime"`
 }
 
 // Users many user
@@ -34,12 +36,12 @@ type Users []User
 func (u User) GetData() (User, error) {
 	var user User
 	err := sq.
-		Select("id, account, password, name, mobile, role, manage_group_str, state, insert_time, update_time").
+		Select("id, account, password, name, mobile, super_manager, state, insert_time, update_time").
 		From(userTable).
 		Where(sq.Eq{"id": u.ID}).
 		RunWith(DB).
 		QueryRow().
-		Scan(&user.ID, &user.Account, &user.Password, &user.Name, &user.Mobile, &user.Role, &user.ManageGroupStr, &user.State, &user.InsertTime, &user.UpdateTime)
+		Scan(&user.ID, &user.Account, &user.Password, &user.Name, &user.Mobile, &user.SuperManager, &user.State, &user.InsertTime, &user.UpdateTime)
 	if err != nil {
 		return user, err
 	}
@@ -50,12 +52,12 @@ func (u User) GetData() (User, error) {
 func (u User) GetDataByAccount() (User, error) {
 	var user User
 	err := sq.
-		Select("id, account, password, name, mobile, role, manage_group_str, state, insert_time, update_time").
+		Select("id, account, password, name, mobile, super_manager, state, insert_time, update_time").
 		From(userTable).
 		Where(sq.Eq{"account": u.Account}).
 		RunWith(DB).
 		QueryRow().
-		Scan(&user.ID, &user.Account, &user.Password, &user.Name, &user.Mobile, &user.Role, &user.ManageGroupStr, &user.State, &user.InsertTime, &user.UpdateTime)
+		Scan(&user.ID, &user.Account, &user.Password, &user.Name, &user.Mobile, &user.SuperManager, &user.State, &user.InsertTime, &user.UpdateTime)
 	if err != nil {
 		return user, err
 	}
@@ -65,7 +67,7 @@ func (u User) GetDataByAccount() (User, error) {
 // GetList get many user row
 func (u User) GetList(pagination Pagination) (Users, error) {
 	rows, err := sq.
-		Select("id, account, name, mobile, role, manage_group_str, insert_time, update_time").
+		Select("id, account, name, mobile, super_manager, insert_time, update_time").
 		From(userTable).
 		Where(sq.Eq{"state": Enable}).
 		OrderBy("id DESC").
@@ -80,7 +82,7 @@ func (u User) GetList(pagination Pagination) (Users, error) {
 	for rows.Next() {
 		var user User
 
-		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.Role, &user.ManageGroupStr, &user.InsertTime, &user.UpdateTime); err != nil {
+		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.SuperManager, &user.InsertTime, &user.UpdateTime); err != nil {
 			return users, err
 		}
 		users = append(users, user)
@@ -108,7 +110,7 @@ func (u User) GetTotal() (int64, error) {
 // GetAll user row
 func (u User) GetAll() (Users, error) {
 	rows, err := sq.
-		Select("id, account, name, mobile, insert_time, update_time").
+		Select("id, account, name, mobile, super_manager").
 		From(userTable).
 		Where(sq.Eq{"state": Enable}).
 		OrderBy("id DESC").
@@ -121,57 +123,7 @@ func (u User) GetAll() (Users, error) {
 	for rows.Next() {
 		var user User
 
-		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.InsertTime, &user.UpdateTime); err != nil {
-			return users, err
-		}
-		users = append(users, user)
-	}
-	return users, nil
-}
-
-// GetAll user row
-func (u User) GetAllByRole() (Users, error) {
-	rows, err := sq.
-		Select("id, account, name, mobile, insert_time, update_time").
-		From(userTable).
-		Where(sq.Eq{"role": u.Role}).
-		Where(sq.Eq{"state": Enable}).
-		OrderBy("id DESC").
-		RunWith(DB).
-		Query()
-	if err != nil {
-		return nil, err
-	}
-	users := Users{}
-	for rows.Next() {
-		var user User
-
-		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.InsertTime, &user.UpdateTime); err != nil {
-			return users, err
-		}
-		users = append(users, user)
-	}
-	return users, nil
-}
-
-// GetAll user row
-func (u User) GetCanBindProjectUser() (Users, error) {
-	rows, err := sq.
-		Select("id, account, name, mobile, insert_time, update_time").
-		From(userTable).
-		Where(sq.Eq{"role": []string{"group-manager", "member"}}).
-		Where(sq.Eq{"state": Enable}).
-		OrderBy("id DESC").
-		RunWith(DB).
-		Query()
-	if err != nil {
-		return nil, err
-	}
-	users := Users{}
-	for rows.Next() {
-		var user User
-
-		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.InsertTime, &user.UpdateTime); err != nil {
+		if err := rows.Scan(&user.ID, &user.Account, &user.Name, &user.Mobile, &user.SuperManager); err != nil {
 			return users, err
 		}
 		users = append(users, user)
@@ -193,8 +145,8 @@ func (u User) AddRow() (int64, error) {
 	}
 	result, err := sq.
 		Insert(userTable).
-		Columns("account", "password", "name", "mobile", "role", "manage_group_str").
-		Values(u.Account, string(hashedPassword), u.Name, u.Mobile, u.Role, u.ManageGroupStr).
+		Columns("account", "password", "name", "mobile", "super_manager").
+		Values(u.Account, string(hashedPassword), u.Name, u.Mobile, u.SuperManager).
 		RunWith(DB).
 		Exec()
 
@@ -210,10 +162,9 @@ func (u User) EditRow() error {
 	builder := sq.
 		Update(userTable).
 		SetMap(sq.Eq{
-			"name":             u.Name,
-			"mobile":           u.Mobile,
-			"role":             u.Role,
-			"manage_group_str": u.ManageGroupStr,
+			"name":          u.Name,
+			"mobile":        u.Mobile,
+			"super_manager": u.SuperManager,
 		}).
 		Where(sq.Eq{"id": u.ID})
 	if u.Password != "" {

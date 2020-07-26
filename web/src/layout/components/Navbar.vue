@@ -1,7 +1,14 @@
 <template>
   <div class="navbar">
     <hamburger :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
-
+    <el-dropdown style="float:left;line-height:48px;" trigger="click" size="medium" placement="bottom-start" @command="handleNamespaceChange">
+      <span class="el-dropdown-link">
+        {{ namespace.name }}<i class="el-icon-arrow-down el-icon--right" />
+      </span>
+      <el-dropdown-menu slot="dropdown">
+        <el-dropdown-item v-for="item in namespaceList" :key="item.id" :command="item">{{ item.name }}</el-dropdown-item>
+      </el-dropdown-menu>
+    </el-dropdown>
     <breadcrumb class="breadcrumb-container" />
     <div class="right">
       <div v-show="false" class="github">
@@ -38,7 +45,7 @@
               </el-row>
               <el-row style="margin-left:8px;">
                 <el-row class="user-name">{{ name }}</el-row>
-                <el-row class="user-title">{{ role }} </el-row>
+                <el-row class="user-title">{{ namespace.role }} </el-row>
               </el-row>
             </el-row>
           </div>
@@ -62,6 +69,8 @@
 import { mapGetters } from 'vuex'
 import Breadcrumb from '@/components/Breadcrumb'
 import Hamburger from '@/components/Hamburger'
+import { Loading } from 'element-ui'
+import { getNamespace, getNamespaceList, setNamespace, removeNamespace } from '@/utils/namespace'
 
 export default {
   components: {
@@ -71,7 +80,9 @@ export default {
   data() {
     return {
       starCount: 0,
-      forkCount: 0
+      forkCount: 0,
+      namespace: getNamespace(),
+      namespaceList: getNamespaceList()
     }
   },
   computed: {
@@ -91,8 +102,14 @@ export default {
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
+    handleNamespaceChange(namespace) {
+      setNamespace(namespace)
+      Loading.service({ fullscreen: true })
+      location.reload()
+    },
     async logout() {
       await this.$store.dispatch('user/logout')
+      removeNamespace()
       this.$router.push(`/login?redirect=${this.$route.fullPath}`)
     }
   }

@@ -24,7 +24,7 @@ func (crontab Crontab) GetList(_ http.ResponseWriter, gp *core.Goploy) *core.Res
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	crontabs, err := model.Crontab{Command: gp.URLQuery.Get("command")}.GetList(pagination)
+	crontabs, err := model.Crontab{NamespaceID: gp.Namespace.ID, Command: gp.URLQuery.Get("command")}.GetList(pagination)
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
@@ -37,7 +37,7 @@ func (crontab Crontab) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Re
 	type RespData struct {
 		Total int64 `json:"total"`
 	}
-	total, err := model.Crontab{Command: gp.URLQuery.Get("command")}.GetTotal()
+	total, err := model.Crontab{NamespaceID: gp.Namespace.ID, Command: gp.URLQuery.Get("command")}.GetTotal()
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
@@ -131,6 +131,7 @@ func (crontab Crontab) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 	}
 
 	crontabID, err := model.Crontab{
+		NamespaceID: gp.Namespace.ID,
 		Command:   reqData.Command,
 		Creator:   gp.UserInfo.Name,
 		CreatorID: gp.UserInfo.ID,

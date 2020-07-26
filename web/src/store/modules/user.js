@@ -1,12 +1,13 @@
 import { login, getInfo } from '@/api/user'
 import { setLogin, logout } from '@/utils/auth'
+import { getNamespace, setNamespace, setNamespaceList } from '@/utils/namespace'
 import { resetRouter } from '@/router'
 
 const state = {
   id: 0,
   account: '',
   name: '',
-  role: ''
+  superManager: 0
 }
 
 const mutations = {
@@ -19,8 +20,8 @@ const mutations = {
   SET_NAME: (state, name) => {
     state.name = name
   },
-  SET_ROLE: (state, role) => {
-    state.role = role
+  SET_SUPER_MANAGER: (state, superManager) => {
+    state.superManager = superManager
   }
 }
 
@@ -30,6 +31,15 @@ const actions = {
     const { account, password } = userInfo
     return new Promise((resolve, reject) => {
       login({ account: account.trim(), password: password }).then(response => {
+        const { data } = response
+
+        let namespace = getNamespace()
+        if (!namespace) {
+          namespace = data.namespaceList[data.namespaceList.length - 1]
+          setNamespace(namespace)
+        }
+        setNamespaceList(data.namespaceList)
+
         setLogin('ok')
         resolve()
       }).catch(error => {
@@ -46,11 +56,11 @@ const actions = {
         if (!data) {
           reject('Verification failed, please Login again.')
         }
-        const { id, account, name, role } = data.userInfo
+        const { id, account, name, superManager } = data.userInfo
         commit('SET_ID', id)
         commit('SET_ACCOUNT', account)
         commit('SET_NAME', name)
-        commit('SET_ROLE', role)
+        commit('SET_SUPER_MANAGER', superManager)
         resolve(data)
       }).catch(error => {
         reject(error)

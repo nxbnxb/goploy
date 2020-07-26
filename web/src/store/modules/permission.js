@@ -1,4 +1,5 @@
 import { homeRoutes, asyncRoutes, constantRoutes } from '@/router'
+import { getNamespace } from '@/utils/namespace'
 /**
  * Use meta.role to determine if the current user has permission
  * @param role
@@ -44,9 +45,10 @@ const mutations = {
 }
 
 const actions = {
-  generateRoutes({ commit }, data) {
+  generateRoutes({ commit }) {
     return new Promise(resolve => {
-      let accessRoutes = filterAsyncRoutes(asyncRoutes, data.userInfo.role)
+      const namespace = getNamespace()
+      let accessRoutes = filterAsyncRoutes(asyncRoutes, namespace.role)
       if (accessRoutes.length !== 0) {
         homeRoutes[0].redirect = accessRoutes[0].path + '/' + accessRoutes[0].children[0].path
       }

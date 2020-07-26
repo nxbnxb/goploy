@@ -13,7 +13,11 @@
       <el-table-column prop="account" label="账号" />
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="mobile" label="手机号码" show-overflow-tooltip />
-      <el-table-column prop="role" label="角色" />
+      <el-table-column prop="superManager" label="超管">
+        <template slot-scope="scope">
+          {{ scope.row.superManager === 1 ? "是":"否" }}
+        </template>
+      </el-table-column>
       <el-table-column prop="insertTime" label="创建时间" width="160" />
       <el-table-column prop="updateTime" label="更新时间" width="160" />
       <el-table-column prop="operation" label="操作" width="150">
@@ -47,52 +51,20 @@
         <el-form-item label="手机号码" prop="mobile">
           <el-input v-model="formData.mobile" autocomplete="off" />
         </el-form-item>
-        <el-form-item label="角色" prop="roleId">
-          <el-select v-model="formData.role" placeholder="选择角色">
-            <el-option
-              v-for="(role, index) in roleOption"
-              :key="index"
-              :label="role"
-              :value="role"
-            />
-          </el-select>
+        <el-form-item label="超管" prop="super_manager">
+          <el-radio-group v-model="formData.super_manager">
+            <el-radio :label="1">是</el-radio>
+            <el-radio :label="0">否</el-radio>
+          </el-radio-group>
           <el-popover
             placement="top-start"
             title="权限说明"
             width="300"
             trigger="hover"
           >
-            <p>admin具有一切权限</p>
-            <p>manager不具有成员管理</p>
-            <p>group-manager管理和构建分组的项目，也能绑定不属于分组的项目(只能构建)</p>
-            <p>member只允许构建绑定的项目</p>
+            超管具有所有空间和项目权限
             <el-button slot="reference" type="text" icon="el-icon-question" style="color: #666;" />
           </el-popover>
-        </el-form-item>
-        <el-form-item v-show="formData.role==='group-manager'" label="管理分组" prop="groupId">
-          <el-select
-            v-model="formProps.groupIds"
-            multiple
-            placeholder="选择分组"
-            style="width:100%"
-          >
-            <el-option
-              v-for="(item, index) in groupOption"
-              :key="index"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-show="formData.role==='member' || formData.role==='group-manager'" label="绑定项目" prop="projectIds">
-          <el-cascader
-            v-model="formProps.projectIds"
-            style="width: 100%"
-            :options="filterProjectOption"
-            :props="{ multiple: true }"
-            collapse-tags
-            clearable
-          />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -105,9 +77,6 @@
 <script>
 import { validUsername, validPassword } from '@/utils/validate'
 import { getList, getTotal, add, edit, remove } from '@/api/user'
-import { getOption as getRoleOption } from '@/api/role'
-import { getOption as getGroupOption } from '@/api/group'
-import { getOption as getProjectOption, getBindProjectList } from '@/api/project'
 
 export default {
   data() {
@@ -129,9 +98,6 @@ export default {
     }
     return {
       dialogVisible: false,
-      roleOption: [],
-      groupOption: [],
-      projectOption: [],
       tableData: [],
       tempFormData: {},
       pagination: {
@@ -140,10 +106,7 @@ export default {
         total: 0
       },
       formProps: {
-        disabled: false,
-        groupIds: [],
-        projectIds: [],
-        projectOption: []
+        disabled: false
       },
       formData: {
         id: 0,
@@ -152,8 +115,7 @@ export default {
         name: '',
         mobile: '',
         role: 'member',
-        manageGroupStr: '',
-        projectIds: []
+        super_manager: 0
       },
       formRules: {
         account: [
@@ -171,15 +133,8 @@ export default {
       }
     }
   },
-  computed: {
-    filterProjectOption: function() {
-      return this.projectOption.filter(element => this.formProps.groupIds.indexOf(element.value) === -1)
-    }
-  },
   created() {
     this.storeFormData()
-    this.getRoleOption()
-    this.getGroupOption()
     this.getList()
     this.getTotal()
   },
@@ -193,39 +148,6 @@ export default {
     getTotal() {
       getTotal(this.crontabCommand).then((response) => {
         this.pagination.total = response.data.total
-      })
-    },
-
-    getRoleOption() {
-      getRoleOption().then((response) => {
-        this.roleOption = response.data.list
-      })
-    },
-
-    getGroupOption() {
-      getGroupOption().then((response) => {
-        this.groupOption = response.data.list
-        getProjectOption().then(response => {
-          this.projectOption = this.groupOption.map(element => {
-            return {
-              value: element.id,
-              label: element.name,
-              children: []
-            }
-          })
-          this.projectOption.unshift({
-            value: 0,
-            label: '默认',
-            children: []
-          })
-          response.data.list.forEach(element => {
-            const groupIndex = this.projectOption.findIndex(group => group.value === element.groupId)
-            this.projectOption[groupIndex].children.push({
-              value: element.id,
-              label: element.name
-            })
-          })
-        })
       })
     },
 
@@ -243,17 +165,6 @@ export default {
     handleEdit(data) {
       this.restoreFormData()
       this.formData = Object.assign(this.formData, data)
-      this.formProps.groupIds = data.manageGroupStr.split(',').filter(element => element !== '' && element !== 'all').map(element => {
-        return parseInt(element)
-      })
-      getBindProjectList(data.id).then((response) => {
-        this.formData.projectIds = response.data.projectUserMap.map(element => {
-          return element.projectId
-        })
-        this.formProps.projectIds = response.data.projectUserMap.map(element => {
-          return [element.groupId, element.projectId]
-        })
-      })
       this.dialogVisible = true
     },
 
@@ -273,30 +184,9 @@ export default {
       })
     },
 
-    handleGroupRadioChange(value) {
-      if (value === 2) {
-        this.formProps.showGroupSelect = true
-      } else {
-        this.formProps.showGroupSelect = false
-      }
-    },
-
     submit() {
       this.$refs.form.validate((valid) => {
         if (valid) {
-          if (this.formData.role === 'admin' || this.formData.role === 'manager') {
-            this.formData.manageGroupStr = 'all'
-          } else if (this.formData.role === 'group-manager') {
-            this.formData.manageGroupStr = this.formProps.groupIds.sort((x, y) => x - y).join(',')
-          } else {
-            this.formData.manageGroupStr = ''
-          }
-          this.formData.projectIds = []
-          if (this.formData.role === 'group-manager' || this.formData.role === 'member') {
-            this.formProps.projectIds.forEach(element => {
-              this.formData.projectIds.push(element[1])
-            })
-          }
           if (this.formData.id === 0) {
             this.add()
           } else {

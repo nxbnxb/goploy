@@ -1,6 +1,8 @@
 package model
 
-import sq "github.com/Masterminds/squirrel"
+import (
+	sq "github.com/Masterminds/squirrel"
+)
 
 const projectUserTable = "`project_user`"
 
@@ -12,8 +14,8 @@ type ProjectUser struct {
 	ProjectName string `json:"projectName"`
 	UserID      int64  `json:"userId"`
 	UserName    string `json:"userName"`
-	InsertTime  string  `json:"insertTime"`
-	UpdateTime  string  `json:"updateTime"`
+	InsertTime  string `json:"insertTime"`
+	UpdateTime  string `json:"updateTime"`
 }
 
 // ProjectUsers project user relationship
@@ -46,7 +48,7 @@ func (pu ProjectUser) GetBindUserListByProjectID() (ProjectUsers, error) {
 // GetBindUserListByProjectID user row
 func (pu ProjectUser) GetBindProjectListByUserID() (ProjectUsers, error) {
 	rows, err := sq.
-		Select("project_user.id, project_id, user_id, project.name, project.group_id, project_user.insert_time, project_user.update_time").
+		Select("project_user.id, project_id, user_id, project.name, project_user.insert_time, project_user.update_time").
 		From(projectUserTable).
 		LeftJoin(projectTable + " ON project_user.project_id = project.id").
 		Where(sq.Eq{"user_id": pu.UserID}).
@@ -59,7 +61,7 @@ func (pu ProjectUser) GetBindProjectListByUserID() (ProjectUsers, error) {
 	for rows.Next() {
 		var projectUser ProjectUser
 
-		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.ProjectName, &projectUser.GroupID, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
+		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.ProjectName, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
 			return nil, err
 		}
 		projectUsers = append(projectUsers, projectUser)
@@ -90,57 +92,13 @@ func (pu ProjectUser) GetListByUserID() (ProjectUsers, error) {
 	return projectUsers, nil
 }
 
-// GetListLeftJoinProjectByUserID user row by status
-func (pu ProjectUser) GetListLeftJoinProjectByUserID() (Projects, error) {
-	builder := sq.
-		Select("project_id, project.name, publisher_id, publisher_name, project.group_id, project.environment, project.branch, project.last_publish_token, project.deploy_state, project.update_time").
-		From(projectUserTable).
-		LeftJoin(projectTable + " ON project_user.project_id = project.id").
-		Where(sq.Eq{
-			"project_user.user_id": pu.UserID,
-			"project.state":        Enable,
-		})
-	if pu.GroupID != 0 {
-		builder = builder.Where(sq.Eq{"project.group_id": pu.GroupID})
-	}
-
-	if len(pu.Name) > 0 {
-		builder = builder.Where(sq.Like{"project.name": "%" + pu.Name + "%"})
-	}
-
-	rows, err := builder.RunWith(DB).Query()
-	if err != nil {
-		return nil, err
-	}
-	projects := Projects{}
-	for rows.Next() {
-		var project Project
-
-		if err := rows.Scan(
-			&project.ID,
-			&project.Name,
-			&project.PublisherID,
-			&project.PublisherName,
-			&project.GroupID,
-			&project.Environment,
-			&project.Branch,
-			&project.LastPublishToken,
-			&project.DeployState,
-			&project.UpdateTime); err != nil {
-			return nil, err
-		}
-		projects = append(projects, project)
-	}
-	return projects, nil
-}
-
-// AddMany add many row to table project_server
+// AddMany add many row to table project_user
 func (pu ProjectUsers) AddMany() error {
 	if len(pu) == 0 {
 		return nil
 	}
 	builder := sq.
-		Insert(projectUserTable).
+		Replace(projectUserTable).
 		Columns("project_id", "user_id")
 
 	for _, row := range pu {

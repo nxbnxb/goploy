@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -27,10 +28,11 @@ const (
 
 // Goploy callback param
 type Goploy struct {
-	UserInfo model.User
-	Request  *http.Request
-	URLQuery url.Values
-	Body     []byte
+	UserInfo  model.User
+	Namespace model.Namespace
+	Request   *http.Request
+	URLQuery  url.Values
+	Body      []byte
 }
 
 // 路由定义
@@ -131,6 +133,7 @@ func (rt *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Router) checkLogin(w http.ResponseWriter, r *http.Request) (*Goploy, *Response) {
 	var userInfo model.User
+	var namespace model.Namespace
 	if _, ok := rt.whiteList[r.URL.Path]; !ok {
 		// check token
 		goployTokenCookie, err := r.Cookie(LoginCookieName)
@@ -146,6 +149,32 @@ func (rt *Router) checkLogin(w http.ResponseWriter, r *http.Request) (*Goploy, *
 		if err != nil || !token.Valid {
 			return nil, &Response{Code: LoginExpired, Message: "Login expired"}
 		}
+
+		namespaceCookie, err := r.Cookie(NamespaceCookieName)
+		if err != nil {
+			return nil, &Response{Code: IllegalRequest, Message: "Illegal namespace"}
+		}
+
+		namespaceID, err := strconv.ParseInt(namespaceCookie.Value, 10, 64)
+		if err != nil {
+			return nil, &Response{Code: Deny, Message: "Invalid namespace"}
+		}
+
+		namespaceList, err := GetNamespace(int64(claims["id"].(float64)))
+		if err != nil {
+			return nil, &Response{Code: Deny, Message: "Get namespace list error"}
+		}
+
+		for _, ns := range namespaceList {
+			if ns.ID == namespaceID {
+				namespace = ns
+			}
+		}
+
+		if namespace == (model.Namespace{}) {
+			return nil, &Response{Code: Deny, Message: "Namespace no permission"}
+		}
+
 		userInfo, err = GetUserInfo(int64(claims["id"].(float64)))
 		if err != nil {
 			return nil, &Response{Code: Deny, Message: "Get user information error"}
@@ -166,10 +195,11 @@ func (rt *Router) checkLogin(w http.ResponseWriter, r *http.Request) (*Goploy, *
 		body, _ = ioutil.ReadAll(r.Body)
 	}
 	gp := &Goploy{
-		UserInfo: userInfo,
-		Request:  r,
-		URLQuery: r.URL.Query(),
-		Body:     body,
+		UserInfo:  userInfo,
+		Namespace: namespace,
+		Request:   r,
+		URLQuery:  r.URL.Query(),
+		Body:      body,
 	}
 	return gp, nil
 }
@@ -187,7 +217,7 @@ func (rt *Router) doRequest(w http.ResponseWriter, gp *Goploy) *Response {
 			if route.method != gp.Request.Method {
 				return &Response{Code: Deny, Message: "Invalid request method"}
 			}
-			if err := route.hasRole(gp.UserInfo.Role); err != nil {
+			if err := route.hasRole(gp.Namespace.Role); err != nil {
 				return &Response{Code: Deny, Message: err.Error()}
 			}
 			for _, middleware := range route.middlewares {
@@ -204,13 +234,13 @@ func (rt *Router) doRequest(w http.ResponseWriter, gp *Goploy) *Response {
 	return &Response{Code: Deny, Message: "No such method"}
 }
 
-func (r *route) hasRole(userRole string) error {
+func (r *route) hasRole(namespaceRole string) error {
 	if len(r.roles) == 0 {
 		return nil
 	}
 
 	for _, role := range r.roles {
-		if role == userRole {
+		if role == namespaceRole {
 			return nil
 		}
 	}
