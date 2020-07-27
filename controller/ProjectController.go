@@ -29,7 +29,7 @@ func (project Project) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Res
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	projectName := gp.URLQuery.Get("projectName")
-	projectList, err := model.Project{NamespaceID: gp.Namespace.ID, Name: projectName}.GetList(pagination)
+	projectList, err := model.Project{NamespaceID: gp.Namespace.ID, UserID: gp.UserInfo.ID, Name: projectName}.GetList(pagination)
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -44,7 +44,7 @@ func (project Project) GetTotal(_ http.ResponseWriter, gp *core.Goploy) *core.Re
 	var total int64
 	var err error
 	projectName := gp.URLQuery.Get("projectName")
-	total, err = model.Project{NamespaceID: gp.Namespace.ID, Name: projectName}.GetTotal()
+	total, err = model.Project{NamespaceID: gp.Namespace.ID, UserID: gp.UserInfo.ID, Name: projectName}.GetTotal()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
@@ -103,27 +103,11 @@ func (project Project) GetBindUserList(w http.ResponseWriter, gp *core.Goploy) *
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	projectUsers, err := model.ProjectUser{ProjectID: id}.GetBindUserListByProjectID()
+	projectUsers, err := model.ProjectUser{ProjectID: id, NamespaceID: gp.Namespace.ID}.GetBindUserListByProjectID()
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	return &core.Response{Data: RespData{ProjectUsers: projectUsers}}
-}
-
-// GetBindProjectList project detail
-func (project Project) GetBindProjectList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
-	type RespData struct {
-		ProjectUsers model.ProjectUsers `json:"projectUserMap"`
-	}
-	userID, err := strconv.ParseInt(gp.URLQuery.Get("userId"), 10, 64)
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
-	projectUsersMap, err := model.ProjectUser{UserID: userID}.GetBindProjectListByUserID()
-	if err != nil {
-		return &core.Response{Code: core.Error, Message: err.Error()}
-	}
-	return &core.Response{Data: RespData{ProjectUsers: projectUsersMap}}
 }
 
 // Add one project

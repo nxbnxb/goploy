@@ -100,7 +100,7 @@ export default {
     height: 100%;
     border-left: solid 1px #EBEEF5;
     .json-pretty-string {
-      overflow-y:auto;
+      overflow:auto;
       height: 100%;
       @include scrollBar();
     }

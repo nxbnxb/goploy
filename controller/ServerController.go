@@ -187,11 +187,8 @@ func (server Server) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 	if err := verify(gp.Body, &reqData); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
-	err := model.Server{
-		ID: reqData.ID,
-	}.Remove()
 
-	if err != nil {
+	if err := (model.Server{ID: reqData.ID}).Remove(); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	return &core.Response{}

@@ -261,7 +261,7 @@
         <el-table-column prop="updateTime" width="160" label="更新时间" />
         <el-table-column prop="operation" label="操作" width="80">
           <template slot-scope="scope">
-            <el-button type="danger" @click="removeUser(scope.row)">删除</el-button>
+            <el-button v-show="scope.row.role !== $global.GroupManager" type="danger" @click="removeUser(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

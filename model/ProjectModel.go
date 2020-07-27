@@ -11,6 +11,7 @@ const projectTable = "`project`"
 type Project struct {
 	ID                    int64  `json:"id"`
 	NamespaceID           int64  `json:"namespaceId"`
+	UserID                int64  `json:"userId,omitempty"`
 	Name                  string `json:"name"`
 	URL                   string `json:"url"`
 	Path                  string `json:"path"`
@@ -151,10 +152,12 @@ func (p Project) DeployFail() error {
 // GetList project row
 func (p Project) GetList(pagination Pagination) (Projects, error) {
 	builder := sq.
-		Select("id, name, url, path, symlink_path, environment, branch, after_pull_script_mode, after_pull_script, after_deploy_script_mode, after_deploy_script, rsync_option, auto_deploy, notify_type, notify_target, insert_time, update_time").
+		Select("project.id, name, url, path, symlink_path, environment, branch, after_pull_script_mode, after_pull_script, after_deploy_script_mode, after_deploy_script, rsync_option, auto_deploy, notify_type, notify_target, project.insert_time, project.update_time").
 		From(projectTable).
+		Join(projectUserTable + " ON project_user.project_id = project.id").
 		Where(sq.Eq{
 			"namespace_id": p.NamespaceID,
+			"user_id":      p.UserID,
 			"state":        Enable,
 		})
 
@@ -208,8 +211,10 @@ func (p Project) GetTotal() (int64, error) {
 	builder := sq.
 		Select("COUNT(*) AS count").
 		From(projectTable).
+		Join(projectUserTable + " ON project_user.project_id = project.id").
 		Where(sq.Eq{
 			"namespace_id": p.NamespaceID,
+			"user_id":      p.UserID,
 			"state":        Enable,
 		})
 	if len(p.Name) > 0 {

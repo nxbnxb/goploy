@@ -11,10 +11,12 @@ const projectUserTable = "`project_user`"
 // ProjectUser project user relationship
 type ProjectUser struct {
 	ID          int64  `json:"id"`
+	NamespaceID int64  `json:"namespaceId,omitempty"`
 	ProjectID   int64  `json:"projectId"`
 	ProjectName string `json:"projectName"`
 	UserID      int64  `json:"userId"`
 	UserName    string `json:"userName"`
+	Role        string `json:"role,omitempty"`
 	InsertTime  string `json:"insertTime"`
 	UpdateTime  string `json:"updateTime"`
 }
@@ -25,10 +27,14 @@ type ProjectUsers []ProjectUser
 // GetBindUserListByProjectID user row
 func (pu ProjectUser) GetBindUserListByProjectID() (ProjectUsers, error) {
 	rows, err := sq.
-		Select("project_user.id, project_id, user_id, user.name, project_user.insert_time, project_user.update_time").
+		Select("project_user.id, project_id, project_user.user_id, user.name, namespace_user.role, project_user.insert_time, project_user.update_time").
 		From(projectUserTable).
 		LeftJoin(userTable + " ON project_user.user_id = user.id").
-		Where(sq.Eq{"project_id": pu.ProjectID}).
+		LeftJoin(namespaceUserTable + " ON namespace_user.user_id = user.id").
+		Where(sq.Eq{
+			"project_id": pu.ProjectID,
+			"role":       []string{"group-manager", "member"},
+		}).
 		RunWith(DB).
 		Query()
 	if err != nil {
@@ -38,54 +44,7 @@ func (pu ProjectUser) GetBindUserListByProjectID() (ProjectUsers, error) {
 	for rows.Next() {
 		var projectUser ProjectUser
 
-		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.UserName, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
-			return nil, err
-		}
-		projectUsers = append(projectUsers, projectUser)
-	}
-	return projectUsers, nil
-}
-
-// GetBindUserListByProjectID user row
-func (pu ProjectUser) GetBindProjectListByUserID() (ProjectUsers, error) {
-	rows, err := sq.
-		Select("project_user.id, project_id, user_id, project.name, project_user.insert_time, project_user.update_time").
-		From(projectUserTable).
-		LeftJoin(projectTable + " ON project_user.project_id = project.id").
-		Where(sq.Eq{"user_id": pu.UserID}).
-		RunWith(DB).
-		Query()
-	if err != nil {
-		return nil, err
-	}
-	projectUsers := ProjectUsers{}
-	for rows.Next() {
-		var projectUser ProjectUser
-
-		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.ProjectName, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
-			return nil, err
-		}
-		projectUsers = append(projectUsers, projectUser)
-	}
-	return projectUsers, nil
-}
-
-// GetListByUserID user row
-func (pu ProjectUser) GetListByUserID() (ProjectUsers, error) {
-	rows, err := sq.
-		Select("id, project_id, user_id, insert_time, update_time").
-		From(projectUserTable).
-		Where(sq.Eq{"user_id": pu.UserID}).
-		RunWith(DB).
-		Query()
-	if err != nil {
-		return nil, err
-	}
-	projectUsers := ProjectUsers{}
-	for rows.Next() {
-		var projectUser ProjectUser
-
-		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
+		if err := rows.Scan(&projectUser.ID, &projectUser.ProjectID, &projectUser.UserID, &projectUser.UserName, &projectUser.Role, &projectUser.InsertTime, &projectUser.UpdateTime); err != nil {
 			return nil, err
 		}
 		projectUsers = append(projectUsers, projectUser)
