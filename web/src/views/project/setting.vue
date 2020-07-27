@@ -206,6 +206,8 @@
                   <el-option label="无" :value="0" />
                   <el-option label="企业微信" :value="1" />
                   <el-option label="钉钉" :value="2" />
+                  <el-option label="飞书" :value="3" />
+                  <el-option label="自定义" :value="999" />
                 </el-select>
                 <el-input v-model.trim="formData.notifyTarget" autocomplete="off" placeholder="webhook链接" />
               </el-row>

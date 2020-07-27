@@ -480,7 +480,7 @@ func remoteSync(chInput chan<- syncMessage, userInfo model.User, project model.P
 func notify(project model.Project, deployState int, detail string) {
 	if project.NotifyType == 0 {
 		return
-	} else if project.NotifyType == 1 {
+	} else if project.NotifyType == model.NotifyWeiXin {
 		type markdown struct {
 			Content string `json:"content"`
 		}
@@ -491,10 +491,10 @@ func notify(project model.Project, deployState int, detail string) {
 		content := "构建项目<font color=\"warning\">" + project.Name + "</font>，请相关同事注意。\n "
 
 		if deployState == model.ProjectFail {
-			content += ">状态:<font color=\"red\"> 失败</font> \n "
-			content += ">详情：<font color=\"comment\">" + detail + "</font>"
+			content += "> 状态:<font color=\"red\"> 失败</font> \n "
+			content += "> 详情：<font color=\"comment\">" + detail + "</font>"
 		} else {
-			content += ">状态:<font color=\"green\"> 成功</font>"
+			content += "> 状态:<font color=\"green\"> 成功</font>"
 		}
 
 		msg := message{
@@ -502,6 +502,52 @@ func notify(project model.Project, deployState int, detail string) {
 			Markdown: markdown{
 				Content: content,
 			},
+		}
+		b, _ := json.Marshal(msg)
+		_, err := http.Post(project.NotifyTarget, "application/json", bytes.NewBuffer(b))
+		if err != nil {
+			core.Log(core.ERROR, "projectID:"+strconv.FormatInt(project.ID, 10)+" "+err.Error())
+		}
+	} else if project.NotifyType == model.NotifyDingTalk {
+		type message struct {
+			Msgtype string `json:"msgtype"`
+			Title   string `json:"title"`
+			Text    string `json:"text"`
+		}
+		text := ""
+		if deployState == model.ProjectFail {
+			text += "> 状态:<font color=\"red\"> 失败</font> \n "
+			text += "> 详情：<font color=\"comment\">" + detail + "</font>"
+		} else {
+			text += "> 状态:<font color=\"green\"> 成功</font>"
+		}
+
+		msg := message{
+			Msgtype: "markdown",
+			Title:   "构建项目:" + project.Name,
+			Text:    text,
+		}
+		b, _ := json.Marshal(msg)
+		_, err := http.Post(project.NotifyTarget, "application/json", bytes.NewBuffer(b))
+		if err != nil {
+			core.Log(core.ERROR, "projectID:"+strconv.FormatInt(project.ID, 10)+" "+err.Error())
+		}
+	} else if project.NotifyType == model.NotifyFeiShu {
+		type message struct {
+			Title string `json:"title"`
+			Text  string `json:"text"`
+		}
+		text := ""
+		if deployState == model.ProjectFail {
+			text += "状态: 失败\n "
+			text += "详情: " + detail
+		} else {
+			text += "状态: 成功"
+		}
+
+		msg := message{
+			Title: "构建项目:" + project.Name,
+			Text:  text,
 		}
 		b, _ := json.Marshal(msg)
 		_, err := http.Post(project.NotifyTarget, "application/json", bytes.NewBuffer(b))

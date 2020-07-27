@@ -48,6 +48,14 @@ const (
 	ProjectWebhookDeploy = 1
 )
 
+const (
+	NotifyWeiXin  = 1
+	NotifyDingTalk  = 2
+	NotifyFeiShu  = 3
+	NotifyCustom  = 999
+)
+
+
 // Projects many project
 type Projects []Project
 
