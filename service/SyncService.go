@@ -554,6 +554,34 @@ func notify(project model.Project, deployState int, detail string) {
 		if err != nil {
 			core.Log(core.ERROR, "projectID:"+strconv.FormatInt(project.ID, 10)+" "+err.Error())
 		}
+	} else if project.NotifyType == model.NotifyCustom {
+		type message struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+			Data    struct {
+				ProjectID   int64  `json:"projectId"`
+				ProjectName string `json:"projectName"`
+				Branch      string `json:"branch"`
+				Environment string `json:"environment"`
+			} `json:"data"`
+		}
+		code := 0
+		if deployState == model.ProjectFail {
+			code = 1
+		}
+		msg := message{
+			Code:    code,
+			Message: detail,
+		}
+		msg.Data.ProjectID = project.ID
+		msg.Data.ProjectName = project.Name
+		msg.Data.Branch = project.Branch
+		msg.Data.Environment = project.Environment
+		b, _ := json.Marshal(msg)
+		_, err := http.Post(project.NotifyTarget, "application/json", bytes.NewBuffer(b))
+		if err != nil {
+			core.Log(core.ERROR, "projectID:"+strconv.FormatInt(project.ID, 10)+" "+err.Error())
+		}
 	}
 }
 

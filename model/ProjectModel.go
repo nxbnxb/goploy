@@ -52,7 +52,7 @@ const (
 	NotifyWeiXin  = 1
 	NotifyDingTalk  = 2
 	NotifyFeiShu  = 3
-	NotifyCustom  = 999
+	NotifyCustom  = 255
 )
 
 
