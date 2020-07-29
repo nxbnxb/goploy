@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"golang.org/x/crypto/ssh"
 	"github.com/zhenorzz/goploy/core"
 	"github.com/zhenorzz/goploy/model"
 	"github.com/zhenorzz/goploy/utils"
 	"github.com/zhenorzz/goploy/ws"
+	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -491,10 +491,10 @@ func notify(project model.Project, deployState int, detail string) {
 		content := "构建项目<font color=\"warning\">" + project.Name + "</font>，请相关同事注意。\n "
 
 		if deployState == model.ProjectFail {
-			content += "> 状态:<font color=\"red\"> 失败</font> \n "
+			content += "> 状态:<font color=\"red\">失败</font> \n "
 			content += "> 详情：<font color=\"comment\">" + detail + "</font>"
 		} else {
-			content += "> 状态:<font color=\"green\"> 成功</font>"
+			content += "> 状态:<font color=\"green\">成功</font>"
 		}
 
 		msg := message{
@@ -516,10 +516,10 @@ func notify(project model.Project, deployState int, detail string) {
 		}
 		text := ""
 		if deployState == model.ProjectFail {
-			text += "> 状态:<font color=\"red\"> 失败</font> \n "
+			text += "> 状态:<font color=\"red\">失败</font> \n "
 			text += "> 详情：<font color=\"comment\">" + detail + "</font>"
 		} else {
-			text += "> 状态:<font color=\"green\"> 成功</font>"
+			text += "> 状态:<font color=\"green\">成功</font>"
 		}
 
 		msg := message{

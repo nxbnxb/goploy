@@ -49,8 +49,8 @@ func (tpl Template) EditRow() error {
 	return err
 }
 
-// Remove Template
-func (tpl Template) Remove() error {
+// DeleteRow Template
+func (tpl Template) DeleteRow() error {
 	_, err := sq.
 		Delete(templateTable).
 		Where(sq.Eq{"id": tpl.ID}).

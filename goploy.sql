@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`project`  (
   `publisher_id` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `publisher_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `last_publish_token` char(36) CHARACTER SET utf8mb4 NOT NULL DEFAULT '',
-  `notify_type` tinyint(4) UNSIGNED NOT NULL DEFAULT 0 COMMENT '1=>企业微信 2=>钉钉',
+  `notify_type` tinyint(4) UNSIGNED NOT NULL DEFAULT 0 COMMENT '1=企业微信 2=钉钉 3=飞书 255=自定义',
   `notify_target` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '推送目标，目前只支持webhook',
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -92,6 +92,23 @@ CREATE TABLE IF NOT EXISTS `goploy`.`publish_trace` (
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_project_id` (`project_id`) USING BTREE COMMENT 'project_id'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `monitor` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `namespace_id` int(10) unsigned NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `domain` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `port` smallint(5) unsigned NOT NULL DEFAULT '80',
+  `second` int(10) unsigned NOT NULL DEFAULT '1' COMMENT '间隔',
+  `times` smallint(5) unsigned NOT NULL DEFAULT '1' COMMENT '连续失败次数',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `notify_type` tinyint(4) unsigned NOT NULL DEFAULT '0' COMMENT '1=企业微信 2=钉钉 3=飞书 255=自定义',
+  `notify_target` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `state` tinyint(4) unsigned NOT NULL DEFAULT '1' COMMENT '0=暂停  1=开启',
+  `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `goploy`.`server`  (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -177,7 +194,7 @@ CREATE TABLE IF NOT EXISTS `goploy`.`user`  (
   `password` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `mobile` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
-  `state` tinyint(1) NOT NULL DEFAULT '1' COMMENT '0:=被禁用  1=正常',
+  `state` tinyint(1) NOT NULL DEFAULT '1' COMMENT '0=被禁用  1=正常',
   `insert_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `last_login_time` datetime DEFAULT NULL,

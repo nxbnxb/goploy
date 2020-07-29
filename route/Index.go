@@ -60,6 +60,15 @@ func Init() *router.Router {
 	rt.Add("/project/removeTask", router.POST, controller.Project{}.RemoveTask).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 	rt.Add("/project/getTaskList", router.GET, controller.Project{}.GetTaskList).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
 
+	// monitor route
+	rt.Add("/monitor/getList", router.GET, controller.Monitor{}.GetList)
+	rt.Add("/monitor/getTotal", router.GET, controller.Monitor{}.GetTotal)
+	rt.Add("/monitor/check", router.POST, controller.Monitor{}.Check).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/monitor/add", router.POST, controller.Monitor{}.Add).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/monitor/edit", router.POST, controller.Monitor{}.Edit).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/monitor/toggle", router.POST, controller.Monitor{}.Toggle).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+	rt.Add("/monitor/remove", router.DELETE, controller.Monitor{}.Remove).Roles([]string{core.RoleAdmin, core.RoleManager, core.RoleGroupManager})
+
 	//// deploy route
 	rt.Add("/deploy/getList", router.GET, controller.Deploy{}.GetList)
 	rt.Add("/deploy/getDetail", router.GET, controller.Deploy{}.GetDetail)

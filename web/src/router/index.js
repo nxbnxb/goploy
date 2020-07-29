@@ -98,6 +98,28 @@ export const asyncRoutes = [
     }]
   },
   {
+    path: '/monitor',
+    name: '监控管理',
+    component: Layout,
+    meta: {
+      title: '监控管理',
+      icon: 'monitor',
+      roles: ['admin', 'manager', 'group-manager']
+    },
+    children: [
+      {
+        path: 'setting',
+        name: '应用监控',
+        component: () => import('@/views/monitor/setting'),
+        meta: {
+          title: '应用监控',
+          icon: 'monitor',
+          roles: ['admin', 'manager', 'group-manager']
+        }
+      }
+    ]
+  },
+  {
     path: '/project',
     name: '项目管理',
     component: Layout,

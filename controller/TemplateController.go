@@ -14,7 +14,7 @@ type Template Controller
 // GetList template list
 func (Template) GetList(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type RespData struct {
-		Templates   model.Templates  `json:"list"`
+		Templates model.Templates `json:"list"`
 	}
 	pagination, err := model.PaginationFrom(gp.URLQuery)
 	if err != nil {
@@ -111,7 +111,7 @@ func (Template) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	return &core.Response{}
 }
 
-// Remove one Template
+// DeleteRow one Template
 func (Template) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID int64 `json:"id" validate:"gt=0"`
@@ -122,8 +122,8 @@ func (Template) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 		return &core.Response{Code: core.Error, Message: err.Error()}
 	}
 	err = model.Template{
-		ID:         reqData.ID,
-	}.Remove()
+		ID: reqData.ID,
+	}.DeleteRow()
 
 	if err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}

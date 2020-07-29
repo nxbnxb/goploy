@@ -148,7 +148,7 @@ func (s Server) EditRow() error {
 	return err
 }
 
-// Remove Server
+// DeleteRow Server
 func (s Server) Remove() error {
 	tx, err := DB.Begin()
 	if err != nil {

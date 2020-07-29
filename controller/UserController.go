@@ -213,7 +213,7 @@ func (user User) Edit(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
 	} else if userInfo.SuperManager == model.GeneralUser && reqData.SuperManager == model.SuperManager {
-		if err := (model.NamespaceUser{UserID: reqData.ID}).AddAdminByUserID();err != nil {
+		if err := (model.NamespaceUser{UserID: reqData.ID}).AddAdminByUserID(); err != nil {
 			return &core.Response{Code: core.Error, Message: err.Error()}
 		}
 	}
@@ -221,7 +221,7 @@ func (user User) Edit(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	return &core.Response{}
 }
 
-// Remove one User
+// DeleteRow one User
 func (user User) Remove(_ http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID int64 `json:"id" validate:"gt=0"`

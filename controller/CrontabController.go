@@ -132,9 +132,9 @@ func (crontab Crontab) Add(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 
 	crontabID, err := model.Crontab{
 		NamespaceID: gp.Namespace.ID,
-		Command:   reqData.Command,
-		Creator:   gp.UserInfo.Name,
-		CreatorID: gp.UserInfo.ID,
+		Command:     reqData.Command,
+		Creator:     gp.UserInfo.Name,
+		CreatorID:   gp.UserInfo.ID,
 	}.AddRow()
 
 	if err != nil {
@@ -256,7 +256,7 @@ func (crontab Crontab) Import(w http.ResponseWriter, gp *core.Goploy) *core.Resp
 	return &core.Response{}
 }
 
-// Remove one Crontab
+// DeleteRow one Crontab
 func (crontab Crontab) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID    int64 `json:"id" validate:"gt=0"`

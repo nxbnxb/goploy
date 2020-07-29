@@ -316,7 +316,7 @@ func (project Project) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Respon
 	return &core.Response{}
 }
 
-// Remove one Project
+// DeleteRow one Project
 func (project Project) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID int64 `json:"id"`

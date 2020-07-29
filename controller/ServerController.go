@@ -102,9 +102,6 @@ func (server Server) Check(w http.ResponseWriter, gp *core.Goploy) *core.Respons
 		Port  int    `json:"port" validate:"min=0,max=65535"`
 		Owner string `json:"owner" validate:"required"`
 	}
-	type RespData struct {
-		ID int64 `json:"id"`
-	}
 	var reqData ReqData
 	if err := verify(gp.Body, &reqData); err != nil {
 		return &core.Response{Code: core.Error, Message: err.Error()}
@@ -178,7 +175,7 @@ func (server Server) Edit(w http.ResponseWriter, gp *core.Goploy) *core.Response
 	return &core.Response{}
 }
 
-// Remove one Server
+// DeleteRow one Server
 func (server Server) Remove(w http.ResponseWriter, gp *core.Goploy) *core.Response {
 	type ReqData struct {
 		ID int64 `json:"id" validate:"gt=0"`
