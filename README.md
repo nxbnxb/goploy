@@ -1,5 +1,5 @@
 <p align=center>
-    <img src="https://github.com/zhenorzz/goploy/blob/master/banner.png" alt="logo" title="logo" />
+    <img src="./banner.png" alt="logo" title="logo" />
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 
 完整的安装指引，上手无难度！
 
-[DEMO](http://49.234.66.193:3000) admin:admin!@# 
+[DEMO](http://49.234.66.193:3000) admin:admin!@# (不一定能打开，看心情)
 
 [帮助文档](https://zhenorzz.gitee.io/goploy)
 
@@ -49,8 +49,11 @@
 2. 根据安装指引填入相关的配置
 3. web http://ip:port  (账号:密码 admin:admin!@#)
 
+## 预览
+![预览](./preview.png)
+
 ## 原理图
-![原理图](https://github.com/zhenorzz/goploy/blob/master/goploy.png)
+![原理图](./goploy.png)
 
 ## 反向代理
 nginx反向代理记得升级ws协议
